@@ -30,6 +30,11 @@ public class GameView {
     private TextArea logArea;
     private final Button campButton;
 
+    // Cache delle immagini
+    private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png");
+    private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png");
+    private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png");
+
     public GameView(String heroName) {
         this.root = new BorderPane();
         this.gridPane = new GridPane();
@@ -37,6 +42,18 @@ public class GameView {
         this.heroNameLabel = new Label("⚔ Eroe: " + heroName);
         this.campButton = new Button("⛺ Accampati (Riposa)");
         initUI();
+    }
+
+    private static Image loadCachedImage(String path) {
+        try {
+            var resource = GameView.class.getResource(path);
+            if (resource != null) {
+                return new Image(resource.toExternalForm(), 38, 38, true, true);
+            }
+        } catch (Exception e) {
+            // Ignora se non trovato
+        }
+        return null;
     }
 
     private void initUI() {
@@ -74,13 +91,6 @@ public class GameView {
                 StackPane cell = new StackPane();
                 cell.setMinSize(45, 45);
                 cell.setPrefSize(45, 45);
-                cell.setStyle(
-                        "-fx-background-color: linear-gradient(to bottom, rgba(240, 248, 255, 0.85), rgba(225, 245, 254, 0.85)); " +
-                                "-fx-border-color: #B3E5FC; " +
-                                "-fx-border-width: 1.5px; " +
-                                "-fx-border-radius: 6px; " +
-                                "-fx-background-radius: 6px;"
-                );
                 cellPanes[x][y] = cell;
                 gridPane.add(cell, x, y);
             }
@@ -167,10 +177,7 @@ public class GameView {
                                     "-fx-border-radius: 6px; " +
                                     "-fx-background-radius: 6px;"
                     );
-
-                    Node heroNode = loadEntityImage("/images/hero.png", "⚔", "#C62828", 38);
-                    cell.getChildren().add(heroNode);
-                    StackPane.setAlignment(heroNode, Pos.CENTER);
+                    cell.getChildren().add(getNode(HERO_IMAGE, "⚔", "#C62828", 38));
 
                 } else {
                     CellType cellType = map.getCellType(currentPos);
@@ -184,9 +191,7 @@ public class GameView {
                                             "-fx-border-radius: 6px; " +
                                             "-fx-background-radius: 6px;"
                             );
-                            Node runeNode = loadEntityImage("/images/rune.png", "🔮", "#E1BEE7", 30);
-                            cell.getChildren().add(runeNode);
-                            StackPane.setAlignment(runeNode, Pos.CENTER);
+                            cell.getChildren().add(getNode(RUNE_IMAGE, "🔮", "#E1BEE7", 30));
                             break;
 
                         case OBSTACLE:
@@ -197,9 +202,7 @@ public class GameView {
                                             "-fx-border-radius: 6px; " +
                                             "-fx-background-radius: 6px;"
                             );
-                            Node obstacleNode = loadEntityImage("/images/obstacle.png", "🧊", "#CFD8DC", 30);
-                            cell.getChildren().add(obstacleNode);
-                            StackPane.setAlignment(obstacleNode, Pos.CENTER);
+                            cell.getChildren().add(getNode(OBSTACLE_IMAGE, "🧊", "#CFD8DC", 30));
                             break;
 
                         case EMPTY:
@@ -218,27 +221,22 @@ public class GameView {
         }
     }
 
-    private Node loadEntityImage(String imagePath, String fallbackEmoji, String textColor, int size) {
-        try {
-            var resource = getClass().getResource(imagePath);
-            if (resource != null) {
-                Image img = new Image(resource.toExternalForm());
-                ImageView imageView = new ImageView(img);
-                imageView.setFitWidth(size);
-                imageView.setFitHeight(size);
-                imageView.setPreserveRatio(true);
-                return imageView;
-            }
-        } catch (Exception e) {
-            // Ignora e usa il fallback
+    private Node getNode(Image cachedImage, String fallbackEmoji, String textColor, int size) {
+        if (cachedImage != null) {
+            ImageView imageView = new ImageView(cachedImage);
+            imageView.setFitWidth(size);
+            imageView.setFitHeight(size);
+            imageView.setPreserveRatio(true);
+
+            // Disattiva il filtro di interpolazione lineare per eliminare la sfocatura (effetto pixel-art netto)
+            imageView.setSmooth(false);
+
+            return imageView;
         }
 
-        String colorToUse = (textColor != null) ? textColor : "#FFFFFF";
         Label fallbackLabel = new Label(fallbackEmoji);
-        String style = "-fx-font-size: " + (size > 30 ? "18px;" : "14px;") +
-                " -fx-text-fill: " + colorToUse + "; " +
-                "-fx-font-weight: bold;";
-        fallbackLabel.setStyle(style);
+        fallbackLabel.setStyle("-fx-font-size: " + (size > 30 ? "18px;" : "14px;") +
+                " -fx-text-fill: " + textColor + "; -fx-font-weight: bold;");
         return fallbackLabel;
     }
 
