@@ -23,6 +23,9 @@ public class MainMenuView {
     private final Button leaderboardButton;
     private final Button exitButton;
 
+    // Etichetta di errore con spazio sempre riservato (mai più shift)
+    private final Label errorLabel;
+
     public MainMenuView() {
         this.root = new StackPane();
         this.nameInput = new TextField();
@@ -30,6 +33,7 @@ public class MainMenuView {
         this.rulesButton = new Button();
         this.leaderboardButton = new Button();
         this.exitButton = new Button();
+        this.errorLabel = new Label();
 
         initUI();
         initActions();
@@ -58,17 +62,34 @@ public class MainMenuView {
             }
         }
 
-        // --- 2. Container Centrale (Nome + Pulsanti Principali) ---
-        VBox menuBox = new VBox(12);
+        // --- 2. Container Centrale (Menu Principale) ---
+        VBox menuBox = new VBox(10);
         menuBox.setAlignment(Pos.CENTER);
+        menuBox.setMaxWidth(400);
         menuBox.setTranslateY(-5);
 
-        // Riquadro per l'inserimento del nome dell'eroe
-        VBox inputContainer = new VBox(4);
-        inputContainer.setAlignment(Pos.CENTER);
-
+        // Etichetta del nome
         Label inputLabel = new Label("NOME DELL'EROE");
         inputLabel.setStyle("-fx-text-fill: #81D4FA; -fx-font-weight: bold; -fx-font-size: 11px; -fx-font-family: 'Arial';");
+
+        // Configurazione dell'errore: sempre gestito nel layout ma invisibile all'avvio
+        errorLabel.setText("");
+        errorLabel.setOpacity(0.0); // Invisibile ma occupa lo spazio esatto, impedendo qualsiasi shift
+        errorLabel.setMinWidth(280);
+        errorLabel.setMaxWidth(280);
+        errorLabel.setAlignment(Pos.CENTER);
+        errorLabel.setWrapText(true);
+        errorLabel.setStyle(
+                "-fx-background-color: rgba(211, 47, 47, 0.9); " +
+                        "-fx-text-fill: #FFFFFF; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-font-size: 11px; " +
+                        "-fx-padding: 6px 10px; " +
+                        "-fx-background-radius: 6px; " +
+                        "-fx-border-color: #FF5252; " +
+                        "-fx-border-radius: 6px; " +
+                        "-fx-border-width: 1px;"
+        );
 
         nameInput.setPromptText("Inserisci il tuo nome...");
         nameInput.setMaxWidth(240);
@@ -85,7 +106,10 @@ public class MainMenuView {
                         "-fx-border-width: 1.5px;"
         );
 
-        inputContainer.getChildren().addAll(inputLabel, nameInput);
+        // Contenitore centrale del blocco nome ed errore
+        VBox inputContainer = new VBox(5, inputLabel, errorLabel, nameInput);
+        inputContainer.setAlignment(Pos.CENTER);
+        inputContainer.setMaxWidth(300);
 
         // Stile dei pulsanti principali
         String baseButtonStyle =
@@ -151,6 +175,16 @@ public class MainMenuView {
         StackPane.setAlignment(backgroundView, Pos.CENTER);
     }
 
+    public void showNameError(String message) {
+        errorLabel.setText(message);
+        errorLabel.setOpacity(1.0); // Rende visibile il box rosso senza alterare il layout
+    }
+
+    public void hideNameError() {
+        errorLabel.setText("");
+        errorLabel.setOpacity(0.0); // Rende trasparente il box liberando visivamente lo spazio
+    }
+
     private void setupButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
         button.setText(text);
         button.setMinWidth(width);
@@ -169,6 +203,12 @@ public class MainMenuView {
         ));
 
         leaderboardButton.setOnAction(e -> showArchiveDialog());
+
+        nameInput.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.trim().isEmpty()) {
+                hideNameError();
+            }
+        });
     }
 
     private void showCustomDialog(String titleText, String contentText) {
@@ -206,15 +246,15 @@ public class MainMenuView {
         root.getChildren().add(overlay);
     }
 
-    // Finestra Archivio di Niflheim (Struttura a tabella tabellare con intestazioni e scorrimento)
+    // Finestra Archivio di Niflheim (Riorganizzata a schede a blocco pulite e centrate)
     private void showArchiveDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
 
         VBox dialogBox = new VBox(15);
         dialogBox.setAlignment(Pos.CENTER);
-        dialogBox.setMaxWidth(780);
-        dialogBox.setMaxHeight(520);
+        dialogBox.setMaxWidth(820);
+        dialogBox.setMaxHeight(540);
         dialogBox.setPadding(new Insets(20));
         dialogBox.setStyle(
                 "-fx-background-color: rgba(10, 30, 60, 0.97); " +
@@ -228,58 +268,57 @@ public class MainMenuView {
         Label titleLabel = new Label("🏆 ARCHIVIO DI NIFLHEIM 🏆");
         titleLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Arial';");
 
-        // --- CONTENITORE ORIZZONTALE PER LE DUE TABELLE ---
-        HBox columnsContainer = new HBox(15);
+        // --- CONTENITORE ORIZZONTALE PER LE DUE SEZIONI ---
+        HBox columnsContainer = new HBox(20);
         columnsContainer.setAlignment(Pos.CENTER);
 
-        // 1. Tabella Vittorie (Sala degli Eroi)
-        VBox victoriesContent = new VBox(6);
-        victoriesContent.setPadding(new Insets(5));
-
-        HBox victoriesHeader = createTableHeader("EROE", "TEMPO IMPIEGATO");
-        victoriesContent.getChildren().add(victoriesHeader);
-
+        // 1. Sezione Vittorie
+        VBox victoriesList = new VBox(8);
+        victoriesList.setPadding(new Insets(5));
         List<ScoreManager.VictoryEntry> topVictories = ScoreManager.getVictories();
         if (topVictories.isEmpty()) {
             Label emptyLbl = new Label("Nessun eroe ha completato l'impresa.");
-            emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px 0 0 0;");
-            victoriesContent.getChildren().add(emptyLbl);
+            emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px;");
+            victoriesList.getChildren().add(emptyLbl);
         } else {
             int rank = 1;
             for (ScoreManager.VictoryEntry entry : topVictories) {
-                HBox row = createTableRow(rank + ". " + entry.getHeroName(), entry.getFormattedTime(), "#C8E6C9");
-                victoriesContent.getChildren().add(row);
+                VBox card = createRecordCard(
+                        rank + ". " + entry.getHeroName(),
+                        "Tempo impiegato: " + entry.getFormattedTime(),
+                        "#C8E6C9"
+                );
+                victoriesList.getChildren().add(card);
                 rank++;
             }
         }
-        ScrollPane victoriesScroll = createScrollableContainer(victoriesContent, "SALA DEGLI EROI (Vittorie)");
+        ScrollPane victoriesScroll = createCardScrollContainer(victoriesList, "SALA DEGLI EROI (Vittorie)");
 
         // --- LINEA DIVISORIA VERTICALE ---
         VBox divider = new VBox();
         divider.setMinWidth(2);
-        divider.setPrefHeight(300);
+        divider.setPrefHeight(320);
         divider.setStyle("-fx-background-color: rgba(129, 212, 250, 0.3);");
 
-        // 2. Tabella Tentativi (Cronache dei Caduti)
-        VBox attemptsContent = new VBox(6);
-        attemptsContent.setPadding(new Insets(5));
-
-        HBox attemptsHeader = createTableHeader("EROE / RUNE", "STATO");
-        attemptsContent.getChildren().add(attemptsHeader);
-
+        // 2. Sezione Tentativi (Caduti)
+        VBox attemptsList = new VBox(8);
+        attemptsList.setPadding(new Insets(5));
         List<ScoreManager.AttemptEntry> recentAttempts = ScoreManager.getAttempts();
         if (recentAttempts.isEmpty()) {
             Label emptyLbl = new Label("Nessun tentativo registrato.");
-            emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px 0 0 0;");
-            attemptsContent.getChildren().add(emptyLbl);
+            emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px;");
+            attemptsList.getChildren().add(emptyLbl);
         } else {
             for (ScoreManager.AttemptEntry entry : recentAttempts) {
-                String heroInfo = entry.getHeroName() + " (" + entry.getRunesCollected() + "/5 💎)";
-                HBox row = createTableRow(heroInfo, entry.getStatus(), "#FFCCBC");
-                attemptsContent.getChildren().add(row);
+                VBox card = createRecordCard(
+                        entry.getHeroName() + "  —  Rune: " + entry.getRunesCollected() + "/5 💎",
+                        "Esito: " + entry.getStatus(),
+                        "#FFCCBC"
+                );
+                attemptsList.getChildren().add(card);
             }
         }
-        ScrollPane attemptsScroll = createScrollableContainer(attemptsContent, "CRONACHE DEI CADUTI (Tentativi)");
+        ScrollPane attemptsScroll = createCardScrollContainer(attemptsList, "CRONACHE DEI CADUTI (Tentativi)");
 
         columnsContainer.getChildren().addAll(victoriesScroll, divider, attemptsScroll);
 
@@ -293,52 +332,35 @@ public class MainMenuView {
         root.getChildren().add(overlay);
     }
 
-    // Helper per creare l'intestazione fissa della tabella
-    private HBox createTableHeader(String col1Text, String col2Text) {
-        HBox headerBox = new HBox();
-        headerBox.setPadding(new Insets(4, 8, 6, 8));
-        headerBox.setStyle("-fx-border-color: rgba(129, 212, 250, 0.4); -fx-border-width: 0 0 1 0;");
+    private VBox createRecordCard(String mainText, String subText, String accentColor) {
+        VBox card = new VBox(4);
+        card.setPadding(new Insets(8, 12, 8, 12));
+        card.setPrefWidth(350);
+        card.setStyle(
+                "-fx-background-color: rgba(5, 15, 30, 0.6); " +
+                        "-fx-background-radius: 6px; " +
+                        "-fx-border-color: rgba(129, 212, 250, 0.2); " +
+                        "-fx-border-radius: 6px; " +
+                        "-fx-border-width: 1px;"
+        );
 
-        Label col1 = new Label(col1Text);
-        col1.setPrefWidth(180);
-        col1.setStyle("-fx-text-fill: #81D4FA; -fx-font-size: 11px; -fx-font-weight: bold;");
+        Label mainLbl = new Label(mainText);
+        mainLbl.setWrapText(true);
+        mainLbl.setStyle("-fx-text-fill: " + accentColor + "; -fx-font-size: 12px; -fx-font-weight: bold;");
 
-        Label col2 = new Label(col2Text);
-        col2.setPrefWidth(160);
-        col2.setAlignment(Pos.CENTER_RIGHT);
-        col2.setStyle("-fx-text-fill: #81D4FA; -fx-font-size: 11px; -fx-font-weight: bold;");
+        Label subLbl = new Label(subText);
+        subLbl.setWrapText(true);
+        subLbl.setStyle("-fx-text-fill: #B3E5FC; -fx-font-size: 11px;");
 
-        headerBox.getChildren().addAll(col1, col2);
-        return headerBox;
+        card.getChildren().addAll(mainLbl, subLbl);
+        return card;
     }
 
-    // Helper per creare una riga formattata della tabella
-    private HBox createTableRow(String leftText, String rightText, String textColor) {
-        HBox rowBox = new HBox();
-        rowBox.setPadding(new Insets(5, 8, 5, 8));
-        rowBox.setAlignment(Pos.CENTER_LEFT);
-        rowBox.setStyle("-fx-background-color: rgba(5, 15, 30, 0.4); -fx-background-radius: 4px;");
-
-        Label leftLbl = new Label(leftText);
-        leftLbl.setPrefWidth(180);
-        leftLbl.setWrapText(true);
-        leftLbl.setStyle("-fx-text-fill: " + textColor + "; -fx-font-size: 11px; -fx-font-weight: bold;");
-
-        Label rightLbl = new Label(rightText);
-        rightLbl.setPrefWidth(160);
-        rightLbl.setAlignment(Pos.CENTER_RIGHT);
-        rightLbl.setStyle("-fx-text-fill: #B3E5FC; -fx-font-size: 11px;");
-
-        rowBox.getChildren().addAll(leftLbl, rightLbl);
-        return rowBox;
-    }
-
-    // Helper per incorniciare il contenuto con titolo e scorrimento indipendente
-    private ScrollPane createScrollableContainer(VBox content, String sectionTitle) {
+    private ScrollPane createCardScrollContainer(VBox content, String sectionTitle) {
         VBox outerWrapper = new VBox(8);
         outerWrapper.setPadding(new Insets(10));
         outerWrapper.setStyle(
-                "-fx-background-color: rgba(5, 15, 30, 0.6); " +
+                "-fx-background-color: rgba(5, 15, 30, 0.4); " +
                         "-fx-background-radius: 10px; " +
                         "-fx-border-color: rgba(129, 212, 250, 0.3); " +
                         "-fx-border-radius: 10px; " +
@@ -349,8 +371,8 @@ public class MainMenuView {
         title.setStyle("-fx-text-fill: #81D4FA; -fx-font-size: 12px; -fx-font-weight: bold;");
 
         ScrollPane scroll = new ScrollPane(content);
-        scroll.setPrefWidth(360);
-        scroll.setPrefHeight(250);
+        scroll.setPrefWidth(375);
+        scroll.setPrefHeight(270);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scroll.setStyle(
@@ -363,8 +385,8 @@ public class MainMenuView {
         outerWrapper.getChildren().addAll(title, scroll);
 
         ScrollPane finalScroll = new ScrollPane(outerWrapper);
-        finalScroll.setPrefWidth(375);
-        finalScroll.setPrefHeight(300);
+        finalScroll.setPrefWidth(390);
+        finalScroll.setPrefHeight(320);
         finalScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         finalScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         finalScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
