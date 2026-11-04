@@ -5,11 +5,14 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameOverView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.WelcomeView;
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class Main extends Application {
 
@@ -49,6 +52,9 @@ public class Main extends Application {
         primaryStage.centerOnScreen();
 
         gameView.logMessage("[INFO] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
+
+        // Registriamo il tempo di inizio partita per calcolare la durata
+        final long startTime = System.currentTimeMillis();
 
         // Inizializzazione della mappa 10x10 con rune e ostacoli casuali
         GridMap map = new GridMap(10, 10);
@@ -106,8 +112,17 @@ public class Main extends Application {
                         runesCollected[0]++;
                         gameView.logMessage("[EVENTO] Hai raccolto una runa! (" + runesCollected[0] + " / 5)");
 
+                        // Controllo Condizione di Vittoria
                         if (runesCollected[0] >= 5) {
                             gameView.logMessage("[VITTORIA] Hai recuperato tutte le rune di Niflheim!");
+
+                            // Calcolo del tempo totale impiegato in secondi
+                            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+
+                            // Breve pausa prima di passare alla schermata di vittoria
+                            PauseTransition pause = new PauseTransition(Duration.seconds(1.0));
+                            pause.setOnFinished(ev -> showVictoryScene(heroName, elapsedSeconds));
+                            pause.play();
                         }
                     }
 
@@ -140,6 +155,18 @@ public class Main extends Application {
         gameOverView.getMenuButton().setOnAction(e -> showWelcomeScene());
 
         primaryStage.setScene(gameOverScene);
+        primaryStage.centerOnScreen();
+    }
+
+    // 4. Mostra la schermata di Vittoria con il tempo di gioco
+    private void showVictoryScene(String heroName, long elapsedSeconds) {
+        VictoryView victoryView = new VictoryView(heroName, elapsedSeconds);
+        Scene victoryScene = new Scene(victoryView.getRoot(), 800, 600);
+
+        victoryView.getMenuButton().setOnAction(e -> showWelcomeScene());
+        victoryView.getExitButton().setOnAction(e -> primaryStage.close());
+
+        primaryStage.setScene(victoryScene);
         primaryStage.centerOnScreen();
     }
 
