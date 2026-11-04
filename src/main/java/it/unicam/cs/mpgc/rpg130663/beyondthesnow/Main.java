@@ -5,8 +5,8 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameOverView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.MainMenuView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.WelcomeView;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,22 +22,25 @@ public class Main extends Application {
     public void start(Stage stage) {
         this.primaryStage = stage;
         this.primaryStage.setTitle("Beyond the Snow: Niflheim");
-        showWelcomeScene();
+        showMainMenu();
     }
 
-    // 1. Mostra la schermata di benvenuto iniziale
-    private void showWelcomeScene() {
-        WelcomeView welcomeView = new WelcomeView();
-        Scene welcomeScene = new Scene(welcomeView.getRoot(), 800, 600);
+    // 1. Mostra il Menu Principale
+    private void showMainMenu() {
+        MainMenuView menuView = new MainMenuView();
+        Scene menuScene = new Scene(menuView.getRoot(), 900, 700);
 
-        welcomeView.getStartButton().setOnAction(e -> {
-            String heroName = welcomeView.getHeroName();
+        menuView.getStartButton().setOnAction(e -> {
+            String heroName = menuView.getNameInput().getText();
+            if (heroName == null || heroName.trim().isEmpty()) {
+                heroName = "Eroe"; // Nome di fallback se il campo è vuoto
+            }
             showGameScene(heroName);
         });
 
-        welcomeView.getExitButton().setOnAction(e -> primaryStage.close());
+        menuView.getExitButton().setOnAction(e -> primaryStage.close());
 
-        primaryStage.setScene(welcomeScene);
+        primaryStage.setScene(menuScene);
         primaryStage.setResizable(false);
         primaryStage.centerOnScreen();
         primaryStage.show();
@@ -152,7 +155,7 @@ public class Main extends Application {
         Scene gameOverScene = new Scene(gameOverView.getRoot(), 800, 600);
 
         gameOverView.getRestartButton().setOnAction(e -> showGameScene(heroName));
-        gameOverView.getMenuButton().setOnAction(e -> showWelcomeScene());
+        gameOverView.getMenuButton().setOnAction(e -> showMainMenu());
 
         primaryStage.setScene(gameOverScene);
         primaryStage.centerOnScreen();
@@ -163,7 +166,7 @@ public class Main extends Application {
         VictoryView victoryView = new VictoryView(heroName, elapsedSeconds);
         Scene victoryScene = new Scene(victoryView.getRoot(), 800, 600);
 
-        victoryView.getMenuButton().setOnAction(e -> showWelcomeScene());
+        victoryView.getMenuButton().setOnAction(e -> showMainMenu());
         victoryView.getExitButton().setOnAction(e -> primaryStage.close());
 
         primaryStage.setScene(victoryScene);
