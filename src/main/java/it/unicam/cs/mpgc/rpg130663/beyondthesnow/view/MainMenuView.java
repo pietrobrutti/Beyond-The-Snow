@@ -1,8 +1,8 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow.view;
 
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -11,6 +11,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+
+import java.util.List;
 
 public class MainMenuView {
     private final StackPane root;
@@ -111,7 +113,7 @@ public class MainMenuView {
         VBox buttonsBox = new VBox(8, startButton, exitButton);
         buttonsBox.setAlignment(Pos.CENTER);
 
-        // --- 3. Stile Pulsanti Icona (Istruzioni '?' e Classifica '🏆') sotto i bottoni principali ---
+        // --- 3. Pulsanti Icona in basso (Classifica '🏆' e Istruzioni '?') ---
         String iconButtonStyle =
                 "-fx-background-color: rgba(2, 136, 209, 0.8); " +
                         "-fx-text-fill: #E1F5FE; " +
@@ -139,11 +141,9 @@ public class MainMenuView {
         leaderboardButton.setOnMouseEntered(e -> leaderboardButton.setStyle(iconButtonStyle + "-fx-background-color: rgba(3, 169, 244, 1);"));
         leaderboardButton.setOnMouseExited(e -> leaderboardButton.setStyle(iconButtonStyle));
 
-        // HBox per affiancare i due bottoni icona appena sotto la lista principale
         HBox iconButtonsBox = new HBox(15, leaderboardButton, rulesButton);
         iconButtonsBox.setAlignment(Pos.CENTER);
 
-        // Aggiungiamo tutto al container verticale del menu
         menuBox.getChildren().addAll(inputContainer, buttonsBox, iconButtonsBox);
 
         root.getChildren().addAll(backgroundView, menuBox);
@@ -160,34 +160,84 @@ public class MainMenuView {
     }
 
     private void initActions() {
-        rulesButton.setOnAction(e -> showRulesDialog());
-        leaderboardButton.setOnAction(e -> showLeaderboardDialog());
-    }
-
-    private void showRulesDialog() {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Beyond the Snow - Istruzioni");
-        alert.setHeaderText("❄ Guida alle Lande Ghiacciate ❄");
-        alert.setContentText(
-                "• OBIETTIVO: Esplora la griglia e raccogli tutte le 5 rune per vincere la partita.\n\n" +
+        rulesButton.setOnAction(e -> showCustomDialog(
+                "❄ GUIDA ALLE LANDE GHIACCIATE ❄",
+                "• OBIETTIVO: Esplora la griglia e raccogli tutte le 5 rune magiche per vincere la partita.\n\n" +
                         "• SOPRAVVIVENZA: Tieni d'occhio i tuoi parametri vitali e il freddo.\n\n" +
-                        "• COMANDI: Usa i tasti FRECCIA o WASD per muoverti sulla mappa.\n\n" +
-                        "Buona fortuna, Eroe!"
-        );
-        alert.showAndWait();
+                        "• COMANDI: Usa i tasti FRECCIA o WASD per muoverti sulla mappa."
+        ));
+
+        leaderboardButton.setOnAction(e -> {
+            StringBuilder leaderboardText = new StringBuilder();
+            List<ScoreManager.ScoreEntry> topScores = ScoreManager.getScores();
+
+            if (topScores.isEmpty()) {
+                leaderboardText.append("Nessun eroe ha ancora completato l'impresa.\nSii il primo a incidere il tuo nome!");
+            } else {
+                int rank = 1;
+                for (ScoreManager.ScoreEntry entry : topScores) {
+                    leaderboardText.append(rank).append(". ")
+                            .append(entry.getHeroName())
+                            .append(" — ")
+                            .append(entry.getFormattedTime())
+                            .append(" (5 Rune)\n");
+                    rank++;
+                }
+            }
+
+            showCustomDialog("🏆 SALA DEGLI EROI (CLASSIFICA) 🏆", leaderboardText.toString());
+        });
     }
 
-    private void showLeaderboardDialog() {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Beyond the Snow - Classifica");
-        alert.setHeaderText("🏆 Sala degli Eroi (Migliori Tempi) 🏆");
-        alert.setContentText(
-                "1. Ragnar - 45 secondi (5 Rune)\n" +
-                        "2. Lagertha - 58 secondi (5 Rune)\n" +
-                        "3. Bjorn - 1 minuto e 12 secondi (5 Rune)\n\n" +
-                        "Completa la partita per registrare il tuo tempo!"
+    private void showCustomDialog(String titleText, String contentText) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.75);");
+
+        VBox dialogBox = new VBox(15);
+        dialogBox.setAlignment(Pos.CENTER);
+        dialogBox.setMaxWidth(420);
+        dialogBox.setMaxHeight(280);
+        dialogBox.setPadding(new Insets(25));
+        dialogBox.setStyle(
+                "-fx-background-color: rgba(10, 30, 60, 0.95); " +
+                        "-fx-background-radius: 12px; " +
+                        "-fx-border-color: #81D4FA; " +
+                        "-fx-border-radius: 12px; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(129, 212, 250, 0.4), 20, 0, 0, 0);"
         );
-        alert.showAndWait();
+
+        Label titleLabel = new Label(titleText);
+        titleLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 15px; -fx-font-weight: bold; -fx-font-family: 'Arial';");
+
+        Label contentLabel = new Label(contentText);
+        contentLabel.setWrapText(true);
+        contentLabel.setStyle("-fx-text-fill: #B3E5FC; -fx-font-size: 13px; -fx-font-family: 'Arial'; -fx-alignment: center;");
+
+        Button closeBtn = new Button("CHIUDI");
+        closeBtn.setMinWidth(120);
+        String btnStyle =
+                "-fx-background-color: rgba(2, 136, 209, 0.8); " +
+                        "-fx-text-fill: #E1F5FE; " +
+                        "-fx-font-size: 13px; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 8px 0px; " +
+                        "-fx-background-radius: 6px; " +
+                        "-fx-border-color: #81D4FA; " +
+                        "-fx-border-radius: 6px; " +
+                        "-fx-border-width: 1.5px; " +
+                        "-fx-cursor: hand;";
+        closeBtn.setStyle(btnStyle);
+        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle(btnStyle + "-fx-background-color: rgba(3, 169, 244, 1);"));
+        closeBtn.setOnMouseExited(e -> closeBtn.setStyle(btnStyle));
+
+        closeBtn.setOnAction(e -> root.getChildren().remove(overlay));
+
+        dialogBox.getChildren().addAll(titleLabel, contentLabel, closeBtn);
+        overlay.getChildren().add(dialogBox);
+        StackPane.setAlignment(dialogBox, Pos.CENTER);
+
+        root.getChildren().add(overlay);
     }
 
     public StackPane getRoot() {

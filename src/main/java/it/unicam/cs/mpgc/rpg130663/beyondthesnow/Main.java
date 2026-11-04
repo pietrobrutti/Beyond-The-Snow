@@ -1,5 +1,6 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow;
 
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
@@ -8,6 +9,7 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.MainMenuView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
 import javafx.animation.PauseTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -32,10 +34,42 @@ public class Main extends Application {
 
         menuView.getStartButton().setOnAction(e -> {
             String heroName = menuView.getNameInput().getText();
+
+            // Controllo obbligatorietà del nome con animazione di vibrazione e alert sul campo
             if (heroName == null || heroName.trim().isEmpty()) {
-                heroName = "Eroe"; // Nome di fallback se il campo è vuoto
+                // Effetto vibrazione (Shake) sul campo di testo
+                TranslateTransition shake = new TranslateTransition(Duration.millis(50), menuView.getNameInput());
+                shake.setByX(10f);
+                shake.setCycleCount(6);
+                shake.setAutoReverse(true);
+                shake.play();
+
+                // Salva lo stile originale e applica lo stile di errore (rosso)
+                String originalStyle = menuView.getNameInput().getStyle();
+                menuView.getNameInput().setStyle(
+                        "-fx-background-color: rgba(40, 10, 15, 0.9); " +
+                                "-fx-text-fill: #FF8A80; " +
+                                "-fx-prompt-text-fill: #FF5252; " +
+                                "-fx-font-weight: bold; " +
+                                "-fx-alignment: center; " +
+                                "-fx-padding: 7px; " +
+                                "-fx-background-radius: 6px; " +
+                                "-fx-border-color: #FF5252; " +
+                                "-fx-border-radius: 6px; " +
+                                "-fx-border-width: 2px;"
+                );
+                menuView.getNameInput().setPromptText("DEVI INSERIRE PER FORZA UN NOME!");
+
+                // Ripristina lo stile normale appena l'utente comincia a scrivere
+                menuView.getNameInput().setOnKeyTyped(eventKey -> {
+                    menuView.getNameInput().setStyle(originalStyle);
+                    menuView.getNameInput().setPromptText("Inserisci il tuo nome...");
+                    menuView.getNameInput().setOnKeyTyped(null);
+                });
+
+            } else {
+                showGameScene(heroName.trim());
             }
-            showGameScene(heroName);
         });
 
         menuView.getExitButton().setOnAction(e -> primaryStage.close());
@@ -56,24 +90,18 @@ public class Main extends Application {
 
         gameView.logMessage("[INFO] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
 
-        // Registriamo il tempo di inizio partita per calcolare la durata
         final long startTime = System.currentTimeMillis();
-
-        // Inizializzazione della mappa 10x10 con rune e ostacoli casuali
         GridMap map = new GridMap(10, 10);
 
-        // Stato dell'eroe
         final Position[] heroPos = { new Position(0, 0) };
         final int[] hp = { 100 };
         final int maxHp = 100;
         final int[] cold = { 0 };
         final int[] runesCollected = { 0 };
 
-        // Renderizziamo la mappa iniziale e le statistiche
         gameView.renderMap(map, heroPos[0]);
         gameView.updateStats(hp[0], maxHp, cold[0], runesCollected[0]);
 
-        // === GESTIONE CONTROLLI DA TASTIERA (WASD / Frecce) ===
         gameScene.setOnKeyPressed(event -> {
             int newX = heroPos[0].getX();
             int newY = heroPos[0].getY();
@@ -96,40 +124,34 @@ public class Main extends Application {
                     newX++;
                     break;
                 default:
-                    return; // Ignora altri tasti
+                    return;
             }
 
             Position targetPos = new Position(newX, newY);
 
-            // Verifica confini 10x10
             if (map.isValidPosition(targetPos)) {
                 CellType cellType = map.getCellType(targetPos);
 
-                // Verifica che non sia un ostacolo di ghiaccio
                 if (cellType != CellType.OBSTACLE) {
-                    heroPos[0] = targetPos; // Aggiorna posizione
+                    heroPos[0] = targetPos;
 
-                    // Raccolta Runa
                     if (cellType == CellType.RUNE) {
                         map.setCellType(targetPos, CellType.EMPTY);
                         runesCollected[0]++;
                         gameView.logMessage("[EVENTO] Hai raccolto una runa! (" + runesCollected[0] + " / 5)");
 
-                        // Controllo Condizione di Vittoria
                         if (runesCollected[0] >= 5) {
                             gameView.logMessage("[VITTORIA] Hai recuperato tutte le rune di Niflheim!");
 
-                            // Calcolo del tempo totale impiegato in secondi
                             long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+                            ScoreManager.addScore(heroName, elapsedSeconds);
 
-                            // Breve pausa prima di passare alla schermata di vittoria
                             PauseTransition pause = new PauseTransition(Duration.seconds(1.0));
                             pause.setOnFinished(ev -> showVictoryScene(heroName, elapsedSeconds));
                             pause.play();
                         }
                     }
 
-                    // Aggiorna grafica e statistiche
                     gameView.renderMap(map, heroPos[0]);
                     gameView.updateStats(hp[0], maxHp, cold[0], runesCollected[0]);
 
@@ -141,15 +163,12 @@ public class Main extends Application {
             }
         });
 
-        // Forza il focus sulla schermata di gioco per abilitare subito i tasti
         Platform.runLater(() -> gameView.getRoot().requestFocus());
         gameView.getRoot().setOnMouseClicked(e -> gameView.getRoot().requestFocus());
 
-        // Pulsante Accampati (collegato al Game Over per test)
         gameView.getCampButton().setOnAction(e -> showGameOverScene(heroName));
     }
 
-    // 3. Mostra la schermata di Game Over quando l'eroe muore
     private void showGameOverScene(String heroName) {
         GameOverView gameOverView = new GameOverView(heroName);
         Scene gameOverScene = new Scene(gameOverView.getRoot(), 800, 600);
@@ -161,7 +180,6 @@ public class Main extends Application {
         primaryStage.centerOnScreen();
     }
 
-    // 4. Mostra la schermata di Vittoria con il tempo di gioco
     private void showVictoryScene(String heroName, long elapsedSeconds) {
         VictoryView victoryView = new VictoryView(heroName, elapsedSeconds);
         Scene victoryScene = new Scene(victoryView.getRoot(), 800, 600);
