@@ -144,7 +144,9 @@ public class Main extends Application {
                             gameView.logMessage("[VITTORIA] Hai recuperato tutte le rune di Niflheim!");
 
                             long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-                            ScoreManager.addScore(heroName, elapsedSeconds);
+
+                            // Registrazione della vittoria nel file delle vittorie tramite ScoreManager
+                            ScoreManager.addVictory(heroName, elapsedSeconds);
 
                             PauseTransition pause = new PauseTransition(Duration.seconds(1.0));
                             pause.setOnFinished(ev -> showVictoryScene(heroName, elapsedSeconds));
@@ -166,7 +168,11 @@ public class Main extends Application {
         Platform.runLater(() -> gameView.getRoot().requestFocus());
         gameView.getRoot().setOnMouseClicked(e -> gameView.getRoot().requestFocus());
 
-        gameView.getCampButton().setOnAction(e -> showGameOverScene(heroName));
+        // Pulsante Accampati: registra il tentativo e mostra il Game Over
+        gameView.getCampButton().setOnAction(e -> {
+            ScoreManager.addAttempt(heroName, runesCollected[0], "Accampato / Ritirato");
+            showGameOverScene(heroName);
+        });
     }
 
     private void showGameOverScene(String heroName) {
