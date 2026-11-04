@@ -23,7 +23,7 @@ public class VictoryView {
     }
 
     private void initUI(String heroName, long elapsedSeconds) {
-        // --- 1. Sfondo con l'immagine Epica di Vittoria ---
+        // --- 1. Sfondo con l'immagine di Vittoria ---
         ImageView backgroundView = new ImageView();
         try {
             String imagePath = getClass().getResource("/images/victory_background.png").toExternalForm();
@@ -39,68 +39,68 @@ public class VictoryView {
             root.setStyle("-fx-background-color: #0D47A1;");
         }
 
-        // --- 2. Container Principale (Spostato più in basso per lasciare libera la scritta) ---
-        VBox contentContainer = new VBox(15);
+        // --- 2. Container Principale spostato più in basso ---
+        VBox contentContainer = new VBox(12);
         contentContainer.setAlignment(Pos.CENTER);
 
-        // Spostato ancora più in basso per posizionarlo nella parte inferiore della schermata
-        contentContainer.setTranslateY(190);
+        // Abbassato a 145 per posizionarsi perfettamente nello spazio vuoto sotto la scritta
+        contentContainer.setTranslateY(145);
 
-        // Box delle statistiche in stile glassmorphism
-        VBox statsBox = new VBox(8);
+        // Box delle statistiche con icone
+        VBox statsBox = new VBox(6);
         statsBox.setAlignment(Pos.CENTER);
-        statsBox.setMaxWidth(360);
+        statsBox.setMaxWidth(340);
         statsBox.setStyle(
-                "-fx-background-color: rgba(6, 20, 40, 0.85); " +
-                        "-fx-background-radius: 12px; " +
-                        "-fx-padding: 12px 18px; " +
-                        "-fx-border-color: rgba(79, 195, 247, 0.5); " +
-                        "-fx-border-radius: 12px; " +
-                        "-fx-border-width: 1.5px; " +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.7), 15, 0, 0, 5);"
+                "-fx-background-color: rgba(6, 20, 40, 0.75); " +
+                        "-fx-background-radius: 10px; " +
+                        "-fx-padding: 10px 15px; " +
+                        "-fx-border-color: rgba(79, 195, 247, 0.4); " +
+                        "-fx-border-radius: 10px; " +
+                        "-fx-border-width: 1px;"
         );
 
-        // Riga 1: Eroe con icona hero.png
         HBox heroRow = createStatRow(loadIcon("/images/hero.png"), "Eroe: " + heroName, "#E1F5FE");
-
-        // Riga 2: Rune con icona rune.png
         HBox runeRow = createStatRow(loadIcon("/images/rune.png"), "Rune Raccolte: 5 / 5 (100%)", "#CE93D8");
 
-        // Formattazione del tempo in Minuti:Secondi
         long minutes = elapsedSeconds / 60;
         long seconds = elapsedSeconds % 60;
         String timeFormatted = String.format("%02d:%02d", minutes, seconds);
-
-        // Riga 3: Tempo con icona timer.png
         HBox timeRow = createStatRow(loadIcon("/images/timer.png"), "Tempo Impiegato: " + timeFormatted, "#80DEEA");
 
         statsBox.getChildren().addAll(heroRow, runeRow, timeRow);
 
-        // --- 3. Stile dei Pulsanti ---
+        // --- 3. Stile e Lunghezza Fissa dei Pulsanti ---
         String baseButtonStyle =
                 "-fx-background-color: rgba(2, 136, 209, 0.75); " +
                         "-fx-text-fill: #E1F5FE; " +
                         "-fx-font-family: 'Arial', sans-serif; " +
-                        "-fx-font-size: 15px; " +
+                        "-fx-font-size: 14px; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-padding: 10px 25px; " +
-                        "-fx-background-radius: 8px; " +
+                        "-fx-padding: 10px 0px; " +
+                        "-fx-background-radius: 6px; " +
                         "-fx-border-color: #81D4FA; " +
-                        "-fx-border-radius: 8px; " +
+                        "-fx-border-radius: 6px; " +
                         "-fx-border-width: 2px; " +
                         "-fx-cursor: hand; " +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(79, 195, 247, 0.6), 12, 0, 0, 0);";
+                        "-fx-effect: dropshadow(three-pass-box, rgba(79, 195, 247, 0.6), 10, 0, 0, 0);";
 
         String hoverButtonStyle =
                 "-fx-background-color: rgba(3, 169, 244, 0.95); " +
                         "-fx-border-color: #B3E5FC;";
 
+        // Larghezza fissa identica per entrambi i pulsanti (stesso stile del Game Over)
+        double buttonWidth = 240;
+
         menuButton.setText("TORNA AL MENU");
+        menuButton.setMinWidth(buttonWidth);
+        menuButton.setMaxWidth(buttonWidth);
         menuButton.setStyle(baseButtonStyle);
         menuButton.setOnMouseEntered(e -> menuButton.setStyle(baseButtonStyle + hoverButtonStyle));
         menuButton.setOnMouseExited(e -> menuButton.setStyle(baseButtonStyle));
 
         exitButton.setText("ESCI DAL GIOCO");
+        exitButton.setMinWidth(buttonWidth);
+        exitButton.setMaxWidth(buttonWidth);
         exitButton.setStyle(baseButtonStyle);
         exitButton.setOnMouseEntered(e -> exitButton.setStyle(baseButtonStyle + hoverButtonStyle));
         exitButton.setOnMouseExited(e -> exitButton.setStyle(baseButtonStyle));
@@ -115,13 +115,12 @@ public class VictoryView {
         StackPane.setAlignment(backgroundView, Pos.CENTER);
     }
 
-    // Metodo di supporto per creare righe con icona grafica + testo
     private HBox createStatRow(ImageView icon, String text, String textColor) {
-        HBox row = new HBox(10);
+        HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
 
         Label label = new Label(text);
-        label.setStyle("-fx-text-fill: " + textColor + "; -fx-font-weight: bold; -fx-font-size: 13px;");
+        label.setStyle("-fx-text-fill: " + textColor + "; -fx-font-weight: bold; -fx-font-size: 12px;");
 
         if (icon != null) {
             row.getChildren().add(icon);
@@ -130,16 +129,15 @@ public class VictoryView {
         return row;
     }
 
-    // Caricatore di immagini per le icone
     private ImageView loadIcon(String path) {
         try {
             var resource = getClass().getResource(path);
             if (resource != null) {
                 ImageView imgView = new ImageView(new Image(resource.toExternalForm()));
-                imgView.setFitWidth(20);
-                imgView.setFitHeight(20);
+                imgView.setFitWidth(18);
+                imgView.setFitHeight(18);
                 imgView.setPreserveRatio(true);
-                imgView.setSmooth(false); // Mantiene lo stile nitido
+                imgView.setSmooth(false);
                 return imgView;
             }
         } catch (Exception e) {
