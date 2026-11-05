@@ -76,11 +76,33 @@ public class GameController {
                             break;
 
                         case ENEMY:
-                            view.logMessage("[DUELLO] Un Guardiano dei Ghiacci ti sbarra la strada!");
-                            view.showDuelOverlay(
-                                    () -> resolveAttack(targetPos),
-                                    () -> resolveDefense(targetPos),
-                                    () -> resolveFlee(targetPos)
+                            view.logMessage("[ATTACCO] Imboscata! Thrym, the Ice King ti attacca!");
+                            map.setCellType(targetPos, CellType.EMPTY); // Libera la cella
+
+                            // Avvia la schermata di combattimento con il contrattacco gestito
+                            view.showClassicPokemonBattleOverlay(
+                                    player.getName(),
+                                    player.getHp(),
+                                    player.getMaxHp(),
+                                    player.getFrostResistance(),
+                                    damageCost -> { // Il nemico contrattacca riducendo la resistenza al gelo (e facendo un po' di danno HP)
+                                        player.reduceFrostResistance(damageCost);
+                                        player.takeDamage(10); // Thrym infligge 10 danni fissi di gelo all'eroe
+                                        view.logMessage("[COMBATTIMENTO] Thrym contrattacca! Perdi " + damageCost + "% di gelo e 10 HP.");
+                                        checkGameOver();
+                                        updateView();
+                                    },
+                                    () -> { // Azione Lotta vinta senza subire troppi danni
+                                        view.logMessage("[COMBATTIMENTO] Hai respinto l'assalto di Thrym!");
+                                        checkGameOver();
+                                        updateView();
+                                    },
+                                    () -> { // Azione Fuga
+                                        player.reduceFrostResistance(12);
+                                        view.logMessage("[FUGA] Fuga rocambolesca, perdi ulteriore resistenza al gelo.");
+                                        checkGameOver();
+                                        updateView();
+                                    }
                             );
                             break;
 
@@ -102,30 +124,6 @@ public class GameController {
         });
     }
 
-    private void resolveAttack(Position targetPos) {
-        player.takeDamage(15);
-        map.setCellType(targetPos, CellType.EMPTY);
-        view.logMessage("[COMBATTIMENTO] Sconfiggi il mostro con un Attacco Furente (-15 HP). Via libera!");
-        checkGameOver();
-        updateView();
-    }
-
-    private void resolveDefense(Position targetPos) {
-        player.reduceFrostResistance(15);
-        map.setCellType(targetPos, CellType.EMPTY);
-        view.logMessage("[DUELLO] Resisti dietro le tue difese, ma il gelo ti consuma (-15 Gelo).");
-        checkGameOver();
-        updateView();
-    }
-
-    private void resolveFlee(Position targetPos) {
-        player.takeDamage(5);
-        player.reduceFrostResistance(5);
-        view.logMessage("[FUGA] Eviti lo scontro diretto subendo lievi danni (-5 HP, -5 Gelo).");
-        checkGameOver();
-        updateView();
-    }
-
     private void handleRest() {
         if (player.isDead()) return;
 
@@ -134,9 +132,9 @@ public class GameController {
             return;
         }
 
-        player.healHp(25);
-        player.restoreFrostResistance(30);
-        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+25 HP, +30 Gelo).");
+        player.healHp(30); // Ripristina 30 HP preziosi
+        player.restoreFrostResistance(35); // Ripristina la resistenza al gelo
+        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+30 HP, +35% Resistenza al Gelo).");
         updateView();
     }
 
@@ -166,7 +164,6 @@ public class GameController {
 
     private void updateView() {
         view.renderMap(map, player.getPosition());
-        // Aggiornato con tutti e 5 i parametri richiesti dalla GameView
         view.updateStats(
                 player.getHp(),
                 player.getMaxHp(),

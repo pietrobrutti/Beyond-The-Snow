@@ -3,6 +3,7 @@ package it.unicam.cs.mpgc.rpg130663.beyondthesnow.view;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
+import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -16,9 +17,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 public class GameView {
-    private final StackPane root; // Contenitore principale per supportare gli overlay
+    private final StackPane root;
     private final BorderPane mainLayout;
     private final GridPane gridPane;
     private static final int GRID_SIZE = 10;
@@ -31,11 +33,11 @@ public class GameView {
     private TextArea logArea;
     private final Button campButton;
 
-    // Cache delle immagini
-    private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png");
-    private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png");
-    private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png");
-    private static final Image ENEMY_IMAGE = loadCachedImage("/images/enemy.png");
+    // Cache immagini
+    private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png", 300, 300);
+    private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png", 38, 38);
+    private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png", 38, 38);
+    private static final Image THRYM_IMAGE = loadCachedImage("/images/thrym_ice_king.png", 400, 400);
 
     public GameView(String heroName) {
         this.root = new StackPane();
@@ -46,16 +48,14 @@ public class GameView {
         this.campButton = new Button("⛺ Accampati (Riposa)");
 
         initUI();
-
-        // Inseriamo il BorderPane dentro lo StackPane radice
         this.root.getChildren().add(mainLayout);
     }
 
-    private static Image loadCachedImage(String path) {
+    private static Image loadCachedImage(String path, double width, double height) {
         try {
             var resource = GameView.class.getResource(path);
             if (resource != null) {
-                return new Image(resource.toExternalForm(), 38, 38, true, true);
+                return new Image(resource.toExternalForm(), width, height, true, false);
             }
         } catch (Exception e) {
             // Ignora se non trovato
@@ -184,7 +184,7 @@ public class GameView {
                                     "-fx-border-radius: 6px; " +
                                     "-fx-background-radius: 6px;"
                     );
-                    cell.getChildren().add(getNode(HERO_IMAGE, "⚔", "#C62828", 38));
+                    cell.getChildren().add(getNode(HERO_IMAGE, "⚔", "#C62828", 38, false));
 
                 } else {
                     CellType cellType = map.getCellType(currentPos);
@@ -198,7 +198,7 @@ public class GameView {
                                             "-fx-border-radius: 6px; " +
                                             "-fx-background-radius: 6px;"
                             );
-                            cell.getChildren().add(getNode(RUNE_IMAGE, "🔮", "#E1BEE7", 30));
+                            cell.getChildren().add(getNode(RUNE_IMAGE, "🔮", "#E1BEE7", 30, false));
                             break;
 
                         case OBSTACLE:
@@ -209,20 +209,10 @@ public class GameView {
                                             "-fx-border-radius: 6px; " +
                                             "-fx-background-radius: 6px;"
                             );
-                            cell.getChildren().add(getNode(OBSTACLE_IMAGE, "🧊", "#CFD8DC", 30));
+                            cell.getChildren().add(getNode(OBSTACLE_IMAGE, "🧊", "#CFD8DC", 30, false));
                             break;
 
                         case ENEMY:
-                            cell.setStyle(
-                                    "-fx-background-color: linear-gradient(to bottom, rgba(183, 28, 28, 0.85), rgba(127, 0, 0, 0.85)); " +
-                                            "-fx-border-color: #FF8A80; " +
-                                            "-fx-border-width: 1.5px; " +
-                                            "-fx-border-radius: 6px; " +
-                                            "-fx-background-radius: 6px;"
-                            );
-                            cell.getChildren().add(getNode(ENEMY_IMAGE, "👹", "#FFCDD2", 30));
-                            break;
-
                         case EMPTY:
                         default:
                             cell.setStyle(
@@ -239,13 +229,13 @@ public class GameView {
         }
     }
 
-    private Node getNode(Image cachedImage, String fallbackEmoji, String textColor, int size) {
+    private Node getNode(Image cachedImage, String fallbackEmoji, String textColor, int size, boolean isSmooth) {
         if (cachedImage != null) {
             ImageView imageView = new ImageView(cachedImage);
             imageView.setFitWidth(size);
             imageView.setFitHeight(size);
             imageView.setPreserveRatio(true);
-            imageView.setSmooth(false);
+            imageView.setSmooth(isSmooth);
             return imageView;
         }
 
@@ -255,58 +245,211 @@ public class GameView {
         return fallbackLabel;
     }
 
-    // --- Overlay per la schermata di duello tattico ---
-    public void showDuelOverlay(Runnable onAttack, Runnable onDefend, Runnable onFlee) {
+    // --- Schermata di Combattimento Classica ---
+    public void showClassicPokemonBattleOverlay(String heroName, int heroCurrentHp, int heroMaxHp, int heroCurrentCold,
+                                                java.util.function.Consumer<Integer> onAttack, Runnable onWin, Runnable onRun) {
         StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
+        overlay.setStyle("-fx-background-color: rgba(10, 15, 25, 0.95);");
 
-        VBox duelBox = new VBox(15);
-        duelBox.setAlignment(Pos.CENTER);
-        duelBox.setMaxWidth(420);
-        duelBox.setPadding(new Insets(20));
-        duelBox.setStyle(
-                "-fx-background-color: rgba(10, 30, 60, 0.95); " +
-                        "-fx-background-radius: 12px; " +
-                        "-fx-border-color: #FF5252; " +
-                        "-fx-border-radius: 12px; " +
-                        "-fx-border-width: 2px; " +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(255, 82, 82, 0.4), 20, 0, 0, 0);"
+        BorderPane battleLayout = new BorderPane();
+        battleLayout.setMaxSize(720, 480);
+        battleLayout.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, #4A709C, #A4C2E0); " +
+                        "-fx-border-color: #1D3450; -fx-border-width: 4px; -fx-border-radius: 8px; -fx-background-radius: 8px;"
         );
 
-        Label titleLabel = new Label("⚔ DUELLO NEI GHIACCI ⚔");
-        titleLabel.setStyle("-fx-text-fill: #FF8A80; -fx-font-size: 15px; -fx-font-weight: bold;");
+        // --- 1. PARTE SUPERIORE: Statistiche & Immagine di Thrym ---
+        BorderPane topArea = new BorderPane();
 
-        Label descLabel = new Label("Un Guardiano dei Ghiacci ti sbarra la strada! Scegli la tua tattica:");
-        descLabel.setWrapText(true);
-        descLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 12px; -fx-text-alignment: center;");
+        VBox enemyInfoBox = new VBox(4);
+        enemyInfoBox.setPadding(new Insets(12));
+        enemyInfoBox.setMaxWidth(280);
+        enemyInfoBox.setStyle(
+                "-fx-background-color: #E8F0F8; -fx-border-color: #7090B0; -fx-border-width: 2px; " +
+                        "-fx-border-radius: 6px; -fx-background-radius: 6px;"
+        );
 
-        Button btnAttack = createDuelButton("⚔ ATTACCO FURENTE (-15 HP, Elimina il Nemico)");
-        Button btnDefend = createDuelButton("🛡 DIFESA ATTENTA (-15 Gelo, Preserva la Salute)");
-        Button btnFlee = createDuelButton("🏃 SCHIVATA E FUGA (-5 HP, -5 Gelo)");
+        Label enemyNameLabel = new Label("THRYM, THE ICE KING   L.20");
+        enemyNameLabel.setStyle("-fx-font-family: 'Consolas'; -fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #202020;");
 
-        btnAttack.setOnAction(e -> {
-            root.getChildren().remove(overlay);
-            onAttack.run();
+        ProgressBar enemyHpBar = new ProgressBar(1.0);
+        enemyHpBar.setPrefWidth(250);
+        enemyHpBar.setStyle("-fx-accent: #50C878;");
+        enemyInfoBox.getChildren().addAll(enemyNameLabel, enemyHpBar);
+
+        topArea.setLeft(enemyInfoBox);
+        BorderPane.setMargin(enemyInfoBox, new Insets(15, 0, 0, 15));
+
+        ImageView enemyImageView = new ImageView();
+        if (THRYM_IMAGE != null) {
+            enemyImageView.setImage(THRYM_IMAGE);
+            enemyImageView.setFitWidth(220);
+            enemyImageView.setFitHeight(220);
+            enemyImageView.setPreserveRatio(true);
+            enemyImageView.setSmooth(false);
+        }
+        StackPane enemyImageWrapper = new StackPane(enemyImageView);
+        enemyImageWrapper.setAlignment(Pos.BOTTOM_RIGHT);
+        enemyImageWrapper.setPadding(new Insets(10, 30, 0, 0));
+        topArea.setRight(enemyImageWrapper);
+
+        battleLayout.setTop(topArea);
+
+
+        // --- 2. PARTE CENTRale: Immagine dell'Eroe (Spostata più in basso rispetto a prima) ---
+        ImageView heroImageView = new ImageView();
+        if (HERO_IMAGE != null) {
+            heroImageView.setImage(HERO_IMAGE);
+            heroImageView.setFitWidth(150);
+            heroImageView.setFitHeight(150);
+            heroImageView.setPreserveRatio(true);
+            heroImageView.setSmooth(false);
+        }
+        StackPane heroImageWrapper = new StackPane(heroImageView);
+        heroImageWrapper.setAlignment(Pos.BOTTOM_LEFT);
+        // Modificato il padding verticale per posizionarla più in basso nell'arena
+        heroImageWrapper.setPadding(new Insets(70, 0, 5, 45));
+        battleLayout.setCenter(heroImageWrapper);
+
+
+        // --- 3. PARTE INFERIORE: Box Statistiche Eroe & Menu Azioni ---
+        VBox bottomContainer = new VBox(0);
+
+        VBox heroInfoBox = new VBox(4);
+        heroInfoBox.setPadding(new Insets(10, 15, 10, 15));
+        heroInfoBox.setMaxWidth(280);
+        heroInfoBox.setStyle(
+                "-fx-background-color: #E8F0F8; -fx-border-color: #7090B0; -fx-border-width: 2px; " +
+                        "-fx-border-radius: 6px; -fx-background-radius: 6px;"
+        );
+
+        Label heroInfoLabel = new Label(heroName.toUpperCase() + "   L. 15");
+        heroInfoLabel.setStyle("-fx-font-family: 'Consolas'; -fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #202020;");
+
+        ProgressBar heroHpBar = new ProgressBar((double) heroCurrentHp / heroMaxHp);
+        heroHpBar.setPrefWidth(250);
+        heroHpBar.setStyle("-fx-accent: #50C878;");
+
+        Label heroHpText = new Label("PS: " + heroCurrentHp + " / " + heroMaxHp + "  |  Gelo: " + heroCurrentCold + "%");
+        heroHpText.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 10px; -fx-text-fill: #404040;");
+
+        heroInfoBox.getChildren().addAll(heroInfoLabel, heroHpBar, heroHpText);
+
+        VBox heroInfoWrapper = new VBox(heroInfoBox);
+        heroInfoWrapper.setAlignment(Pos.TOP_RIGHT);
+        heroInfoWrapper.setPadding(new Insets(0, 15, 5, 0));
+
+        // Pannello di dialogo e pulsanti GBA
+        BorderPane actionPanel = new BorderPane();
+        actionPanel.setPrefHeight(135);
+        actionPanel.setStyle(
+                "-fx-background-color: #F8F8F8; -fx-border-color: #304870 #203050 #203050 #304870; " +
+                        "-fx-border-width: 4px; -fx-border-radius: 2px; -fx-padding: 10px;"
+        );
+
+        Label dialogueLabel = new Label("Thrym, the Ice King emerge dalla tormenta!\nScegli la tua mossa.");
+        dialogueLabel.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #202020;");
+        actionPanel.setLeft(dialogueLabel);
+
+        VBox actionButtonsBox = new VBox(10);
+        actionButtonsBox.setAlignment(Pos.CENTER);
+
+        Button btnFight = createPokemonMenuButton("⚔ LOTTA (Attacchi)");
+        Button btnRun = createPokemonMenuButton("🏃 FUGA");
+
+        actionButtonsBox.getChildren().addAll(btnFight, btnRun);
+        actionPanel.setRight(actionButtonsBox);
+
+        bottomContainer.getChildren().addAll(heroInfoWrapper, actionPanel);
+        battleLayout.setBottom(bottomContainer);
+
+        // Gestione mosse con feedback visivo chiaro dell'attacco del nemico
+        btnFight.setOnAction(e -> {
+            dialogueLabel.setText("Scegli l'attacco:\n1. Fendente Furente (Costo: 10 Gelo)\n2. Affondo Ardente (Costo: 20 Gelo)");
+
+            Button move1 = createPokemonMenuButton("1. Fendente");
+            Button move2 = createPokemonMenuButton("2. Ardente");
+            Button backBtn = createPokemonMenuButton("Indietro");
+
+            VBox movesBox = new VBox(6);
+            movesBox.setAlignment(Pos.CENTER);
+            movesBox.getChildren().addAll(move1, move2, backBtn);
+            actionPanel.setRight(movesBox);
+
+            move1.setOnAction(ev -> {
+                // Primo messaggio: il giocatore colpisce
+                dialogueLabel.setText(heroName + " usa Fendente Furente!\nIl Re dei Ghiacci barcolla.");
+
+                // Dopo 1.2 secondi, mostra il contrattacco esplicito di Thrym nel dialogo
+                PauseTransition counterPause = new PauseTransition(Duration.seconds(1.2));
+                counterPause.setOnFinished(counterEv -> {
+                    dialogueLabel.setText("Thrym contrattacca con una tormenta!\nPerdi 15% di Gelo e 10 HP.");
+                    onAttack.accept(15); // Applica il danno del nemico
+
+                    // Pausa finale prima di chiudere l'overlay
+                    PauseTransition endPause = new PauseTransition(Duration.seconds(1.5));
+                    endPause.setOnFinished(endEv -> {
+                        root.getChildren().remove(overlay);
+                        onWin.run();
+                    });
+                    endPause.play();
+                });
+                counterPause.play();
+            });
+
+            move2.setOnAction(ev -> {
+                // Primo messaggio: il giocatore colpisce
+                dialogueLabel.setText(heroName + " usa Affondo Ardente!\nDevastante impatto sul nemico.");
+
+                // Dopo 1.2 secondi, mostra il contrattacco di Thrym
+                PauseTransition counterPause = new PauseTransition(Duration.seconds(1.2));
+                counterPause.setOnFinished(counterEv -> {
+                    dialogueLabel.setText("Thrym evoca il gelo eterno!\nPerdi 25% di Gelo e 10 HP.");
+                    onAttack.accept(25); // Applica il danno del nemico
+
+                    // Pausa finale
+                    PauseTransition endPause = new PauseTransition(Duration.seconds(1.5));
+                    endPause.setOnFinished(endEv -> {
+                        root.getChildren().remove(overlay);
+                        onWin.run();
+                    });
+                    endPause.play();
+                });
+                counterPause.play();
+            });
+
+            backBtn.setOnAction(ev -> {
+                dialogueLabel.setText("Thrym, the Ice King ti osserva gelido.");
+                actionPanel.setRight(actionButtonsBox);
+            });
         });
 
-        btnDefend.setOnAction(e -> {
-            root.getChildren().remove(overlay);
-            onDefend.run();
+        btnRun.setOnAction(e -> {
+            dialogueLabel.setText("Fuggi rocambolescamente dalla tormenta!");
+            PauseTransition pause = new PauseTransition(Duration.seconds(1.0));
+            pause.setOnFinished(ev -> {
+                root.getChildren().remove(overlay);
+                onRun.run();
+            });
+            pause.play();
         });
 
-        btnFlee.setOnAction(e -> {
-            root.getChildren().remove(overlay);
-            onFlee.run();
-        });
-
-        duelBox.getChildren().addAll(titleLabel, descLabel, new Label(), btnAttack, btnDefend, btnFlee);
-        overlay.getChildren().add(duelBox);
-        StackPane.setAlignment(duelBox, Pos.CENTER);
-
+        overlay.getChildren().add(battleLayout);
+        StackPane.setAlignment(battleLayout, Pos.CENTER);
         root.getChildren().add(overlay);
     }
 
-    // --- Overlay di Vittoria ---
+    private Button createPokemonMenuButton(String text) {
+        Button btn = new Button(text);
+        btn.setPrefSize(140, 32);
+        btn.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, #F0D870, #D09830); " +
+                        "-fx-text-fill: #202020; -fx-font-family: 'Consolas'; -fx-font-weight: bold; -fx-font-size: 11px; " +
+                        "-fx-border-color: #704010; -fx-border-width: 2px; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-cursor: hand;"
+        );
+        return btn;
+    }
+
     public void showVictoryOverlay(long elapsedSeconds, Runnable onRestart, Runnable onExit) {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.9);");
@@ -343,7 +486,6 @@ public class GameView {
         root.getChildren().add(overlay);
     }
 
-    // --- Overlay di Game Over ---
     public void showGameOverOverlay(Runnable onRestart, Runnable onExit) {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(20, 5, 5, 0.9);");
@@ -394,12 +536,9 @@ public class GameView {
                         "-fx-border-radius: 6px; " +
                         "-fx-cursor: hand;"
         );
-        btn.setOnMouseEntered(e -> btn.setStyle(btn.getStyle() + "-fx-background-color: rgba(3, 169, 244, 1);"));
-        btn.setOnMouseExited(e -> btn.setStyle(btn.getStyle().replace("-fx-background-color: rgba(3, 169, 244, 1);", "")));
         return btn;
     }
 
-    // CORRETTO: adesso riceve anche maxHp e maxFrost per calcolare le percentuali in modo corretto
     public void updateStats(int hp, int maxHp, int cold, int maxCold, int runes) {
         hpBar.setProgress((double) hp / maxHp);
         coldBar.setProgress((double) cold / maxCold);
