@@ -18,7 +18,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 public class GameView {
-    private final BorderPane root;
+    private final StackPane root; // Modificato in StackPane per supportare gli overlay di duello
+    private final BorderPane mainLayout;
     private final GridPane gridPane;
     private static final int GRID_SIZE = 10;
     private final StackPane[][] cellPanes;
@@ -34,14 +35,20 @@ public class GameView {
     private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png");
     private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png");
     private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png");
+    private static final Image ENEMY_IMAGE = loadCachedImage("/images/enemy.png"); // Immagine nemico opzionale
 
     public GameView(String heroName) {
-        this.root = new BorderPane();
+        this.root = new StackPane();
+        this.mainLayout = new BorderPane();
         this.gridPane = new GridPane();
         this.cellPanes = new StackPane[GRID_SIZE][GRID_SIZE];
         this.heroNameLabel = new Label("⚔ Eroe: " + heroName);
         this.campButton = new Button("⛺ Accampati (Riposa)");
+
         initUI();
+
+        // Inseriamo il BorderPane dentro lo StackPane radice
+        this.root.getChildren().add(mainLayout);
     }
 
     private static Image loadCachedImage(String path) {
@@ -59,14 +66,14 @@ public class GameView {
     private void initUI() {
         try {
             String imagePath = getClass().getResource("/images/WelcomePhoto.png").toExternalForm();
-            root.setStyle(
+            mainLayout.setStyle(
                     "-fx-background-image: url('" + imagePath + "'); " +
                             "-fx-background-size: cover; " +
                             "-fx-background-repeat: no-repeat; " +
                             "-fx-background-position: center center;"
             );
         } catch (Exception e) {
-            root.setStyle("-fx-background-color: #1E272C;");
+            mainLayout.setStyle("-fx-background-color: #1E272C;");
         }
 
         Label headerLabel = new Label("❄ BEYOND THE SNOW: NIFLHEIM ❄");
@@ -80,7 +87,7 @@ public class GameView {
                         "-fx-border-width: 0 0 1px 0;"
         );
         BorderPane.setAlignment(headerLabel, Pos.CENTER);
-        root.setTop(headerLabel);
+        mainLayout.setTop(headerLabel);
 
         gridPane.setAlignment(Pos.CENTER);
         gridPane.setHgap(4);
@@ -107,7 +114,7 @@ public class GameView {
         );
 
         BorderPane.setAlignment(gridContainer, Pos.CENTER);
-        root.setCenter(gridContainer);
+        mainLayout.setCenter(gridContainer);
 
         VBox statsPanel = new VBox(15);
         statsPanel.setStyle(
@@ -146,7 +153,7 @@ public class GameView {
         );
 
         statsPanel.getChildren().addAll(heroNameLabel, new Label(), hpTitle, hpBar, coldTitle, coldBar, runesLabel, new Label(), campButton);
-        root.setRight(statsPanel);
+        mainLayout.setRight(statsPanel);
 
         logArea = new TextArea();
         logArea.setPrefHeight(90);
@@ -159,7 +166,7 @@ public class GameView {
                         "-fx-font-size: 12px;"
         );
         logArea.setText("[SISTEMA] Benvenuto in Beyond the Snow. Il gelo di Niflheim mette a dura prova la tua tempra...");
-        root.setBottom(logArea);
+        mainLayout.setBottom(logArea);
     }
 
     public void renderMap(GridMap map, Position heroPos) {
@@ -205,6 +212,17 @@ public class GameView {
                             cell.getChildren().add(getNode(OBSTACLE_IMAGE, "🧊", "#CFD8DC", 30));
                             break;
 
+                        case ENEMY:
+                            cell.setStyle(
+                                    "-fx-background-color: linear-gradient(to bottom, rgba(183, 28, 28, 0.85), rgba(127, 0, 0, 0.85)); " +
+                                            "-fx-border-color: #FF8A80; " +
+                                            "-fx-border-width: 1.5px; " +
+                                            "-fx-border-radius: 6px; " +
+                                            "-fx-background-radius: 6px;"
+                            );
+                            cell.getChildren().add(getNode(ENEMY_IMAGE, "👹", "#FFCDD2", 30));
+                            break;
+
                         case EMPTY:
                         default:
                             cell.setStyle(
@@ -227,10 +245,7 @@ public class GameView {
             imageView.setFitWidth(size);
             imageView.setFitHeight(size);
             imageView.setPreserveRatio(true);
-
-            // Disattiva il filtro di interpolazione lineare per eliminare la sfocatura (effetto pixel-art netto)
             imageView.setSmooth(false);
-
             return imageView;
         }
 
@@ -238,6 +253,76 @@ public class GameView {
         fallbackLabel.setStyle("-fx-font-size: " + (size > 30 ? "18px;" : "14px;") +
                 " -fx-text-fill: " + textColor + "; -fx-font-weight: bold;");
         return fallbackLabel;
+    }
+
+    // --- NUOVO: Overlay per la schermata di duello tattico ---
+    public void showDuelOverlay(Runnable onAttack, Runnable onDefend, Runnable onFlee) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
+
+        VBox duelBox = new VBox(15);
+        duelBox.setAlignment(Pos.CENTER);
+        duelBox.setMaxWidth(420);
+        duelBox.setPadding(new Insets(20));
+        duelBox.setStyle(
+                "-fx-background-color: rgba(10, 30, 60, 0.95); " +
+                        "-fx-background-radius: 12px; " +
+                        "-fx-border-color: #FF5252; " +
+                        "-fx-border-radius: 12px; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(255, 82, 82, 0.4), 20, 0, 0, 0);"
+        );
+
+        Label titleLabel = new Label("⚔ DUELLO NEI GHIACCI ⚔");
+        titleLabel.setStyle("-fx-text-fill: #FF8A80; -fx-font-size: 15px; -fx-font-weight: bold;");
+
+        Label descLabel = new Label("Un Guardiano dei Ghiacci ti sbarra la strada! Scegli la tua tattica:");
+        descLabel.setWrapText(true);
+        descLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 12px; -fx-text-alignment: center;");
+
+        Button btnAttack = createDuelButton("⚔ ATTACCO FURENTE (-15 HP, Elimina il Nemico)");
+        Button btnDefend = createDuelButton("🛡 DIFESA ATTENTA (-15 Gelo, Preserva la Salute)");
+        Button btnFlee = createDuelButton("🏃 SCHIVATA E FUGA (-5 HP, -5 Gelo)");
+
+        btnAttack.setOnAction(e -> {
+            root.getChildren().remove(overlay);
+            onAttack.run();
+        });
+
+        btnDefend.setOnAction(e -> {
+            root.getChildren().remove(overlay);
+            onDefend.run();
+        });
+
+        btnFlee.setOnAction(e -> {
+            root.getChildren().remove(overlay);
+            onFlee.run();
+        });
+
+        duelBox.getChildren().addAll(titleLabel, descLabel, new Label(), btnAttack, btnDefend, btnFlee);
+        overlay.getChildren().add(duelBox);
+        StackPane.setAlignment(duelBox, Pos.CENTER);
+
+        root.getChildren().add(overlay);
+    }
+
+    private Button createDuelButton(String text) {
+        Button btn = new Button(text);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setStyle(
+                "-fx-background-color: rgba(2, 136, 209, 0.85); " +
+                        "-fx-text-fill: #E1F5FE; " +
+                        "-fx-font-size: 11px; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 9px; " +
+                        "-fx-background-radius: 6px; " +
+                        "-fx-border-color: #81D4FA; " +
+                        "-fx-border-radius: 6px; " +
+                        "-fx-cursor: hand;"
+        );
+        btn.setOnMouseEntered(e -> btn.setStyle(btn.getStyle() + "-fx-background-color: rgba(3, 169, 244, 1);"));
+        btn.setOnMouseExited(e -> btn.setStyle(btn.getStyle().replace("-fx-background-color: rgba(3, 169, 244, 1);", "")));
+        return btn;
     }
 
     public void updateStats(int hp, int maxHp, int cold, int runes) {
@@ -255,7 +340,7 @@ public class GameView {
         return campButton;
     }
 
-    public BorderPane getRoot() {
+    public StackPane getRoot() {
         return root;
     }
 }
