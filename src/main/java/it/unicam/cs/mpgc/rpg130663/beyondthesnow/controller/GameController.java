@@ -26,6 +26,7 @@ public class GameController {
 
     public void initControls(Scene scene) {
         view.getCampButton().setOnAction(e -> handleRest());
+        view.getMeltButton().setOnAction(e -> handleMeltIce());
 
         scene.setOnKeyPressed(event -> {
             if (player.isDead()) return;
@@ -67,9 +68,9 @@ public class GameController {
                     // --- CONTROLLO DEL GELO CRITICO (Sotto il 20%) ---
                     if (player.getFrostResistance() < 20) {
                         view.logMessage("[PERICOLO] Il gelo è troppo intenso! Sei costretto a una ritirata d'emergenza!");
-                        player.restoreFrostResistance(15); // Si riprende leggermente fuggendo
+                        player.restoreFrostResistance(15);
                         updateView();
-                        return; // Interrompe l'azione impedendo di avanzare o ingaggiare battaglie se si è congelati
+                        return;
                     }
 
                     switch (cellType) {
@@ -85,7 +86,7 @@ public class GameController {
 
                         case ENEMY:
                             view.logMessage("[ATTACCO] Imboscata! Una creatura dei ghiacci ti assale!");
-                            map.setCellType(targetPos, CellType.EMPTY); // Libera la cella sulla mappa
+                            map.setCellType(targetPos, CellType.EMPTY);
 
                             view.showClassicPokemonBattleOverlay(
                                     player.getName(),
@@ -123,7 +124,7 @@ public class GameController {
                     updateView();
 
                 } else {
-                    view.logMessage("[ATTENZIONE] Un blocco di ghiaccio impenetrabile sbarra la strada!");
+                    view.logMessage("[ATTENZIONE] Un blocco di ghiaccio impenetrabile sbarra la strada! Premi 'Sciogli Ghiaccio'.");
                 }
             } else {
                 view.logMessage("[ATTENZIONE] Sei ai confini della mappa!");
@@ -143,6 +144,48 @@ public class GameController {
         player.restoreFrostResistance(35);
         view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+30 HP, +35% Resistenza al Gelo).");
         updateView();
+    }
+
+    private Position findAdjacentObstacle() {
+        Position heroPos = player.getPosition();
+        int x = heroPos.getX();
+        int y = heroPos.getY();
+
+        Position[] adjacentPositions = {
+                new Position(x, y - 1),
+                new Position(x, y + 1),
+                new Position(x - 1, y),
+                new Position(x + 1, y)
+        };
+
+        for (Position adj : adjacentPositions) {
+            if (map.isValidPosition(adj) && map.getCellType(adj) == CellType.OBSTACLE) {
+                return adj;
+            }
+        }
+        return null;
+    }
+
+    private void handleMeltIce() {
+        if (player.isDead()) return;
+
+        Position targetObstacle = findAdjacentObstacle();
+
+        if (targetObstacle != null) {
+            if (player.getHp() <= 15) {
+                view.logMessage("[ATTENZIONE] Non hai abbastanza salute per sopportare il calore del sacrificio!");
+                return;
+            }
+
+            player.takeDamage(15);
+            map.setCellType(targetObstacle, CellType.EMPTY);
+            view.logMessage("[MAGIA] Bruci la tua energia vitale per sciogliere il blocco di ghiaccio! (-15 HP)");
+
+            checkGameOver();
+            updateView();
+        } else {
+            view.logMessage("[ACCAMPAMENTO] Nessun blocco di ghiaccio adiacente da poter sciogliere!");
+        }
     }
 
     private void checkGameOver() {
@@ -170,6 +213,10 @@ public class GameController {
     }
 
     private void updateView() {
+        // Cerca se c'è un blocco di ghiaccio adiacente all'eroe e segnalalo alla vista per mettergli il bordino rosso
+        Position adjacentObstacle = findAdjacentObstacle();
+        view.setHighlightedIcePos(adjacentObstacle);
+
         view.renderMap(map, player.getPosition());
         view.updateStats(
                 player.getHp(),

@@ -34,8 +34,9 @@ public class GameView {
     private Label runesLabel;
     private TextArea logArea;
     private final Button campButton;
+    private final Button meltButton;
 
-    // Cache delle immagini (Eroe, Rune, Ostacoli e i 4 Nemici)
+    // Cache delle immagini
     private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png", 300, 300);
     private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png", 38, 38);
     private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png", 38, 38);
@@ -47,6 +48,7 @@ public class GameView {
     private static final Image THRYM_IMAGE = loadCachedImage("/images/thrym_ice_king.png", 400, 400);
 
     private final Random random = new Random();
+    private Position highlightedIcePos = null; // Posizione del ghiaccio attualmente evidenziato
 
     public GameView(String heroName) {
         this.root = new StackPane();
@@ -55,6 +57,7 @@ public class GameView {
         this.cellPanes = new StackPane[GRID_SIZE][GRID_SIZE];
         this.heroNameLabel = new Label("⚔ Eroe: " + heroName);
         this.campButton = new Button("⛺ Accampati (Riposa)");
+        this.meltButton = new Button("🔥 Sciogli Ghiaccio (-15 HP)");
 
         initUI();
         this.root.getChildren().add(mainLayout);
@@ -161,7 +164,17 @@ public class GameView {
                         "-fx-cursor: hand;"
         );
 
-        statsPanel.getChildren().addAll(heroNameLabel, new Label(), hpTitle, hpBar, coldTitle, coldBar, runesLabel, new Label(), campButton);
+        meltButton.setMaxWidth(Double.MAX_VALUE);
+        meltButton.setStyle(
+                "-fx-background-color: rgba(211, 47, 47, 0.85); " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 10px; " +
+                        "-fx-background-radius: 6px; " +
+                        "-fx-cursor: hand;"
+        );
+
+        statsPanel.getChildren().addAll(heroNameLabel, new Label(), hpTitle, hpBar, coldTitle, coldBar, runesLabel, new Label(), campButton, meltButton);
         mainLayout.setRight(statsPanel);
 
         logArea = new TextArea();
@@ -176,6 +189,10 @@ public class GameView {
         );
         logArea.setText("[SISTEMA] Benvenuto in Beyond the Snow. Il gelo di Niflheim mette a dura prova la tua tempra...");
         mainLayout.setBottom(logArea);
+    }
+
+    public void setHighlightedIcePos(Position pos) {
+        this.highlightedIcePos = pos;
     }
 
     public void renderMap(GridMap map, Position heroPos) {
@@ -211,17 +228,22 @@ public class GameView {
                             break;
 
                         case OBSTACLE:
+                            // Se questo blocco di ghiaccio è quello selezionato/adiacente, metti il bordino rosso!
+                            boolean isHighlighted = (highlightedIcePos != null && highlightedIcePos.equals(currentPos));
+                            String borderColor = isHighlighted ? "#FF1744" : "#CFD8DC";
+                            double borderWidth = isHighlighted ? 3.0 : 1.5;
+
                             cell.setStyle(
                                     "-fx-background-color: linear-gradient(to bottom, rgba(96, 125, 139, 0.85), rgba(69, 90, 100, 0.85)); " +
-                                            "-fx-border-color: #CFD8DC; " +
-                                            "-fx-border-width: 1.5px; " +
+                                            "-fx-border-color: " + borderColor + "; " +
+                                            "-fx-border-width: " + borderWidth + "px; " +
                                             "-fx-border-radius: 6px; " +
                                             "-fx-background-radius: 6px;"
                             );
                             cell.getChildren().add(getNode(OBSTACLE_IMAGE, "🧊", "#CFD8DC", 30, false));
                             break;
 
-                        case ENEMY: // I nemici sono nascosti e appaiono uguali alle celle vuote finché non ci si calpesta sopra!
+                        case ENEMY:
                         case EMPTY:
                         default:
                             cell.setStyle(
@@ -254,11 +276,9 @@ public class GameView {
         return fallbackLabel;
     }
 
-    // --- Schermata di Combattimento con estrazione variata e bilanciata dei nemici ---
     public void showClassicPokemonBattleOverlay(String heroName, int heroCurrentHp, int heroMaxHp, int heroCurrentCold,
                                                 java.util.function.BiConsumer<Integer, Integer> onPerformAttack, Runnable onWin, Runnable onRun) {
 
-        // Estrazione casuale pesata: Goblin (40%), Wraith (30%), Troll (20%), Thrym Boss (10%)
         int roll = random.nextInt(100);
         String enemyName;
         Image enemySelectedImage;
@@ -633,6 +653,10 @@ public class GameView {
 
     public Button getCampButton() {
         return campButton;
+    }
+
+    public Button getMeltButton() {
+        return meltButton;
     }
 
     public StackPane getRoot() {
