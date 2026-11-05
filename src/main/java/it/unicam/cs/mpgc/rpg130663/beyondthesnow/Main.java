@@ -1,14 +1,7 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow;
 
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameOverView;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.controller.GameController;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.MainMenuView;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
-import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -80,121 +73,21 @@ public class Main extends Application {
         primaryStage.show();
     }
 
-    // 2. Mostra la schermata di gioco principale con i controlli da tastiera
+    // 2. Avvia la schermata di gioco delegando la logica al GameController
     private void showGameScene(String heroName) {
-        GameView gameView = new GameView(heroName);
-        Scene gameScene = new Scene(gameView.getRoot(), 950, 700);
+        // Inizializziamo il controller che gestisce la vista, la mappa e le statistiche dell'eroe
+        GameController gameController = new GameController(heroName);
+        Scene gameScene = new Scene(gameController.getView().getRoot(), 950, 700);
 
         primaryStage.setScene(gameScene);
         primaryStage.centerOnScreen();
 
-        gameView.logMessage("[INFO] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
+        // Inizializziamo i controlli da tastiera e i pulsanti tramite il controller
+        gameController.initControls(gameScene);
 
-        final long startTime = System.currentTimeMillis();
-        GridMap map = new GridMap(10, 10);
-
-        final Position[] heroPos = { new Position(0, 0) };
-        final int[] hp = { 100 };
-        final int maxHp = 100;
-        final int[] cold = { 0 };
-        final int[] runesCollected = { 0 };
-
-        gameView.renderMap(map, heroPos[0]);
-        gameView.updateStats(hp[0], maxHp, cold[0], runesCollected[0]);
-
-        gameScene.setOnKeyPressed(event -> {
-            int newX = heroPos[0].getX();
-            int newY = heroPos[0].getY();
-
-            switch (event.getCode()) {
-                case UP:
-                case W:
-                    newY--;
-                    break;
-                case DOWN:
-                case S:
-                    newY++;
-                    break;
-                case LEFT:
-                case A:
-                    newX--;
-                    break;
-                case RIGHT:
-                case D:
-                    newX++;
-                    break;
-                default:
-                    return;
-            }
-
-            Position targetPos = new Position(newX, newY);
-
-            if (map.isValidPosition(targetPos)) {
-                CellType cellType = map.getCellType(targetPos);
-
-                if (cellType != CellType.OBSTACLE) {
-                    heroPos[0] = targetPos;
-
-                    if (cellType == CellType.RUNE) {
-                        map.setCellType(targetPos, CellType.EMPTY);
-                        runesCollected[0]++;
-                        gameView.logMessage("[EVENTO] Hai raccolto una runa! (" + runesCollected[0] + " / 5)");
-
-                        if (runesCollected[0] >= 5) {
-                            gameView.logMessage("[VITTORIA] Hai recuperato tutte le rune di Niflheim!");
-
-                            long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-
-                            // Registrazione della vittoria nel file delle vittorie tramite ScoreManager
-                            ScoreManager.addVictory(heroName, elapsedSeconds);
-
-                            PauseTransition pause = new PauseTransition(Duration.seconds(1.0));
-                            pause.setOnFinished(ev -> showVictoryScene(heroName, elapsedSeconds));
-                            pause.play();
-                        }
-                    }
-
-                    gameView.renderMap(map, heroPos[0]);
-                    gameView.updateStats(hp[0], maxHp, cold[0], runesCollected[0]);
-
-                } else {
-                    gameView.logMessage("[ATTENZIONE] Un blocco di ghiaccio sbarra la strada!");
-                }
-            } else {
-                gameView.logMessage("[ATTENZIONE] Sei ai confini della mappa!");
-            }
-        });
-
-        Platform.runLater(() -> gameView.getRoot().requestFocus());
-        gameView.getRoot().setOnMouseClicked(e -> gameView.getRoot().requestFocus());
-
-        // Pulsante Accampati: registra il tentativo e mostra il Game Over
-        gameView.getCampButton().setOnAction(e -> {
-            ScoreManager.addAttempt(heroName, runesCollected[0], "Accampato / Ritirato");
-            showGameOverScene(heroName);
-        });
-    }
-
-    private void showGameOverScene(String heroName) {
-        GameOverView gameOverView = new GameOverView(heroName);
-        Scene gameOverScene = new Scene(gameOverView.getRoot(), 800, 600);
-
-        gameOverView.getRestartButton().setOnAction(e -> showGameScene(heroName));
-        gameOverView.getMenuButton().setOnAction(e -> showMainMenu());
-
-        primaryStage.setScene(gameOverScene);
-        primaryStage.centerOnScreen();
-    }
-
-    private void showVictoryScene(String heroName, long elapsedSeconds) {
-        VictoryView victoryView = new VictoryView(heroName, elapsedSeconds);
-        Scene victoryScene = new Scene(victoryView.getRoot(), 800, 600);
-
-        victoryView.getMenuButton().setOnAction(e -> showMainMenu());
-        victoryView.getExitButton().setOnAction(e -> primaryStage.close());
-
-        primaryStage.setScene(victoryScene);
-        primaryStage.centerOnScreen();
+        // Richiedi il focus per permettere l'ascolto dei tasti direzionali
+        Platform.runLater(() -> gameController.getView().getRoot().requestFocus());
+        gameController.getView().getRoot().setOnMouseClicked(e -> gameController.getView().getRoot().requestFocus());
     }
 
     public static void main(String[] args) {

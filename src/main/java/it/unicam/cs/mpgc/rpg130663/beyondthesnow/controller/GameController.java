@@ -15,22 +15,16 @@ public class GameController {
     private final long startTime;
 
     public GameController(String heroName) {
-        // Inizializziamo mappa 10x10, giocatore e vista
         this.map = new GridMap(10, 10);
-        this.player = new Player(heroName, 0, 0); // Eroe posizionato a (0,0)
+        this.player = new Player(heroName, 0, 0);
         this.view = new GameView(heroName);
         this.startTime = System.currentTimeMillis();
 
-        // Primo rendering e aggiornamento statistiche
         updateView();
         this.view.logMessage("[SISTEMA] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
     }
 
-    /**
-     * Collega gli eventi della tastiera e i bottoni dell'interfaccia.
-     */
     public void initControls(Scene scene) {
-        // Collegamento del pulsante Accampati (Riposa)
         view.getCampButton().setOnAction(e -> handleRest());
 
         scene.setOnKeyPressed(event -> {
@@ -40,7 +34,6 @@ public class GameController {
             int newX = currentPos.getX();
             int newY = currentPos.getY();
 
-            // Gestione dei tasti direzionali (Frecce o W, A, S, D)
             switch (event.getCode()) {
                 case UP:
                 case W:
@@ -59,25 +52,22 @@ public class GameController {
                     newX++;
                     break;
                 default:
-                    return; // Ignora gli altri tasti
+                    return;
             }
 
             Position targetPos = new Position(newX, newY);
 
-            // 1. Verifica se la posizione rientra nei confini 10x10
             if (map.isValidPosition(targetPos)) {
                 CellType cellType = map.getCellType(targetPos);
 
-                // 2. Verifica che non ci sia un ostacolo di ghiaccio
                 if (cellType != CellType.OBSTACLE) {
-                    player.setPosition(targetPos); // Aggiorna la posizione dell'eroe
-                    player.reduceFrostResistance(2); // Consumo base di gelo per ogni passo
+                    player.setPosition(targetPos);
+                    player.reduceFrostResistance(2);
 
-                    // 3. Gestione del tipo di cella calpestata
                     switch (cellType) {
                         case RUNE:
                             player.collectRune();
-                            map.setCellType(targetPos, CellType.EMPTY); // Rimuovi la runa dalla mappa
+                            map.setCellType(targetPos, CellType.EMPTY);
                             view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + player.getRunesCollected() + " / 5)");
 
                             if (player.getRunesCollected() >= 5) {
@@ -87,7 +77,6 @@ public class GameController {
 
                         case ENEMY:
                             view.logMessage("[DUELLO] Un Guardiano dei Ghiacci ti sbarra la strada!");
-                            // Mostra la schermata di duello tattico overlay
                             view.showDuelOverlay(
                                     () -> resolveAttack(targetPos),
                                     () -> resolveDefense(targetPos),
@@ -155,6 +144,11 @@ public class GameController {
         if (player.isDead()) {
             view.logMessage("[GAME OVER] L'eroe è caduto tra i ghiacci di Niflheim...");
             ScoreManager.addAttempt(player.getName(), player.getRunesCollected(), "Sconfitto");
+
+            view.showGameOverOverlay(
+                    () -> view.logMessage("[SISTEMA] Riavvio non ancora implementato."),
+                    () -> view.logMessage("[SISTEMA] Ritorno al menu non ancora implementato.")
+            );
         }
     }
 
@@ -162,11 +156,24 @@ public class GameController {
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
         ScoreManager.addVictory(player.getName(), elapsedSeconds);
         view.logMessage("[VITTORIA] Hai recuperato tutte e 5 le rune di Niflheim!");
+
+        view.showVictoryOverlay(
+                elapsedSeconds,
+                () -> view.logMessage("[SISTEMA] Riavvio non ancora implementato."),
+                () -> view.logMessage("[SISTEMA] Ritorno al menu non ancora implementato.")
+        );
     }
 
     private void updateView() {
         view.renderMap(map, player.getPosition());
-        view.updateStats(player.getHp(), player.getMaxHp(), player.getFrostResistance(), player.getRunesCollected());
+        // Aggiornato con tutti e 5 i parametri richiesti dalla GameView
+        view.updateStats(
+                player.getHp(),
+                player.getMaxHp(),
+                player.getFrostResistance(),
+                player.getMaxFrost(),
+                player.getRunesCollected()
+        );
     }
 
     public GameView getView() {

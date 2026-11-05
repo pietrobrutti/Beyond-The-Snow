@@ -1,3 +1,4 @@
+pie,0,Accampato / Ritirato
 pie,4,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,0,Accampato / Ritirato

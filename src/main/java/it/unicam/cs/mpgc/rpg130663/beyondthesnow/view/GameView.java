@@ -18,7 +18,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 public class GameView {
-    private final StackPane root; // Modificato in StackPane per supportare gli overlay di duello
+    private final StackPane root; // Contenitore principale per supportare gli overlay
     private final BorderPane mainLayout;
     private final GridPane gridPane;
     private static final int GRID_SIZE = 10;
@@ -35,7 +35,7 @@ public class GameView {
     private static final Image HERO_IMAGE = loadCachedImage("/images/hero.png");
     private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png");
     private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png");
-    private static final Image ENEMY_IMAGE = loadCachedImage("/images/enemy.png"); // Immagine nemico opzionale
+    private static final Image ENEMY_IMAGE = loadCachedImage("/images/enemy.png");
 
     public GameView(String heroName) {
         this.root = new StackPane();
@@ -255,7 +255,7 @@ public class GameView {
         return fallbackLabel;
     }
 
-    // --- NUOVO: Overlay per la schermata di duello tattico ---
+    // --- Overlay per la schermata di duello tattico ---
     public void showDuelOverlay(Runnable onAttack, Runnable onDefend, Runnable onFlee) {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
@@ -306,6 +306,80 @@ public class GameView {
         root.getChildren().add(overlay);
     }
 
+    // --- Overlay di Vittoria ---
+    public void showVictoryOverlay(long elapsedSeconds, Runnable onRestart, Runnable onExit) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.9);");
+
+        VBox box = new VBox(15);
+        box.setAlignment(Pos.CENTER);
+        box.setMaxWidth(450);
+        box.setPadding(new Insets(25));
+        box.setStyle(
+                "-fx-background-color: rgba(10, 30, 60, 0.95); " +
+                        "-fx-background-radius: 12px; " +
+                        "-fx-border-color: #FFE082; " +
+                        "-fx-border-radius: 12px; " +
+                        "-fx-border-width: 2px;"
+        );
+
+        Label title = new Label("🏆 VITTORIA LEGGENDARIA 🏆");
+        title.setStyle("-fx-text-fill: #FFE082; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Label desc = new Label("Hai recuperato tutte e 5 le Rune Magiche di Niflheim in " + elapsedSeconds + " secondi!");
+        desc.setWrapText(true);
+        desc.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 12px; -fx-text-alignment: center;");
+
+        Button btnRestart = createDuelButton("🔄 Gioca Ancora");
+        Button btnExit = createDuelButton("🚪 Torna al Menu");
+
+        btnRestart.setOnAction(e -> onRestart.run());
+        btnExit.setOnAction(e -> onExit.run());
+
+        box.getChildren().addAll(title, desc, new Label(), btnRestart, btnExit);
+        overlay.getChildren().add(box);
+        StackPane.setAlignment(box, Pos.CENTER);
+
+        root.getChildren().add(overlay);
+    }
+
+    // --- Overlay di Game Over ---
+    public void showGameOverOverlay(Runnable onRestart, Runnable onExit) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(20, 5, 5, 0.9);");
+
+        VBox box = new VBox(15);
+        box.setAlignment(Pos.CENTER);
+        box.setMaxWidth(450);
+        box.setPadding(new Insets(25));
+        box.setStyle(
+                "-fx-background-color: rgba(40, 10, 10, 0.95); " +
+                        "-fx-background-radius: 12px; " +
+                        "-fx-border-color: #E53935; " +
+                        "-fx-border-radius: 12px; " +
+                        "-fx-border-width: 2px;"
+        );
+
+        Label title = new Label("💀 SEI MORTO 💀");
+        title.setStyle("-fx-text-fill: #FF8A80; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Label desc = new Label("Il gelo implacabile di Niflheim ha avuto la meglio sul tuo eroe...");
+        desc.setWrapText(true);
+        desc.setStyle("-fx-text-fill: #FFCDD2; -fx-font-size: 12px; -fx-text-alignment: center;");
+
+        Button btnRestart = createDuelButton("🔄 Riprova");
+        Button btnExit = createDuelButton("🚪 Torna al Menu");
+
+        btnRestart.setOnAction(e -> onRestart.run());
+        btnExit.setOnAction(e -> onExit.run());
+
+        box.getChildren().addAll(title, desc, new Label(), btnRestart, btnExit);
+        overlay.getChildren().add(box);
+        StackPane.setAlignment(box, Pos.CENTER);
+
+        root.getChildren().add(overlay);
+    }
+
     private Button createDuelButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -325,9 +399,10 @@ public class GameView {
         return btn;
     }
 
-    public void updateStats(int hp, int maxHp, int cold, int runes) {
+    // CORRETTO: adesso riceve anche maxHp e maxFrost per calcolare le percentuali in modo corretto
+    public void updateStats(int hp, int maxHp, int cold, int maxCold, int runes) {
         hpBar.setProgress((double) hp / maxHp);
-        coldBar.setProgress((double) cold / 100.0);
+        coldBar.setProgress((double) cold / maxCold);
         runesLabel.setText("🔮 Rune raccolte: " + runes + " / 5");
     }
 
