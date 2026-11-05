@@ -64,6 +64,14 @@ public class GameController {
                     player.setPosition(targetPos);
                     player.reduceFrostResistance(2);
 
+                    // --- CONTROLLO DEL GELO CRITICO (Sotto il 20%) ---
+                    if (player.getFrostResistance() < 20) {
+                        view.logMessage("[PERICOLO] Il gelo è troppo intenso! Sei costretto a una ritirata d'emergenza!");
+                        player.restoreFrostResistance(15); // Si riprende leggermente fuggendo
+                        updateView();
+                        return; // Interrompe l'azione impedendo di avanzare o ingaggiare battaglie se si è congelati
+                    }
+
                     switch (cellType) {
                         case RUNE:
                             player.collectRune();
@@ -76,29 +84,28 @@ public class GameController {
                             break;
 
                         case ENEMY:
-                            view.logMessage("[ATTACCO] Imboscata! Thrym, the Ice King ti attacca!");
-                            map.setCellType(targetPos, CellType.EMPTY); // Libera la cella
+                            view.logMessage("[ATTACCO] Imboscata! Una creatura dei ghiacci ti assale!");
+                            map.setCellType(targetPos, CellType.EMPTY); // Libera la cella sulla mappa
 
-                            // Avvia la schermata di combattimento con il contrattacco gestito
                             view.showClassicPokemonBattleOverlay(
                                     player.getName(),
                                     player.getHp(),
                                     player.getMaxHp(),
                                     player.getFrostResistance(),
-                                    damageCost -> { // Il nemico contrattacca riducendo la resistenza al gelo (e facendo un po' di danno HP)
-                                        player.reduceFrostResistance(damageCost);
-                                        player.takeDamage(10); // Thrym infligge 10 danni fissi di gelo all'eroe
-                                        view.logMessage("[COMBATTIMENTO] Thrym contrattacca! Perdi " + damageCost + "% di gelo e 10 HP.");
+                                    (coldDamage, hpDamage) -> {
+                                        player.reduceFrostResistance(coldDamage);
+                                        player.takeDamage(hpDamage);
+                                        view.logMessage("[COMBATTIMENTO] Subisci colpi: -" + coldDamage + "% Gelo, -" + hpDamage + " HP.");
                                         checkGameOver();
                                         updateView();
                                     },
-                                    () -> { // Azione Lotta vinta senza subire troppi danni
-                                        view.logMessage("[COMBATTIMENTO] Hai respinto l'assalto di Thrym!");
+                                    () -> {
+                                        view.logMessage("[COMBATTIMENTO] Hai sconfitto la creatura!");
                                         checkGameOver();
                                         updateView();
                                     },
-                                    () -> { // Azione Fuga
-                                        player.reduceFrostResistance(12);
+                                    () -> {
+                                        player.reduceFrostResistance(15);
                                         view.logMessage("[FUGA] Fuga rocambolesca, perdi ulteriore resistenza al gelo.");
                                         checkGameOver();
                                         updateView();
@@ -132,8 +139,8 @@ public class GameController {
             return;
         }
 
-        player.healHp(30); // Ripristina 30 HP preziosi
-        player.restoreFrostResistance(35); // Ripristina la resistenza al gelo
+        player.healHp(30);
+        player.restoreFrostResistance(35);
         view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+30 HP, +35% Resistenza al Gelo).");
         updateView();
     }

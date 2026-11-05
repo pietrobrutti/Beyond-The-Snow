@@ -1,22 +1,78 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 public class GridMap {
     private final int width;
     private final int height;
-    private final Map<Position, CellType> gridContents;
+    private final Map<Position, CellType> cells;
 
     public GridMap(int width, int height) {
         this.width = width;
         this.height = height;
-        this.gridContents = new HashMap<>();
-        generateDefaultMap();
+        this.cells = new HashMap<>();
+        generateMap();
+    }
+
+    private void generateMap() {
+        Random random = new Random();
+
+        // 1. Inizializza tutte le celle come vuote
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                cells.put(new Position(x, y), CellType.EMPTY);
+            }
+        }
+
+        // Posizione iniziale dell'eroe (0,0) lasciata libera
+        cells.put(new Position(0, 0), CellType.EMPTY);
+
+        // 2. Posiziona le 5 Rune Magiche
+        int runesPlaced = 0;
+        while (runesPlaced < 5) {
+            Position pos = new Position(random.nextInt(width), random.nextInt(height));
+            if ((pos.getX() != 0 || pos.getY() != 0) && cells.get(pos) == CellType.EMPTY) {
+                cells.put(pos, CellType.RUNE);
+                runesPlaced++;
+            }
+        }
+
+        // 3. Posiziona ben 20 Ostacoli di ghiaccio (Ghiaccioli abbondanti sulla mappa)
+        int obstaclesPlaced = 0;
+        while (obstaclesPlaced < 27) {
+            Position pos = new Position(random.nextInt(width), random.nextInt(height));
+            if ((pos.getX() != 0 || pos.getY() != 0) && cells.get(pos) == CellType.EMPTY) {
+                cells.put(pos, CellType.OBSTACLE);
+                obstaclesPlaced++;
+            }
+        }
+
+        // 4. Posiziona gli 8 Nemici nascosti (senza sovrascrivere ostacoli o rune)
+        int enemiesPlaced = 0;
+        while (enemiesPlaced < 10) {
+            Position pos = new Position(random.nextInt(width), random.nextInt(height));
+            if ((pos.getX() != 0 || pos.getY() != 0) && cells.get(pos) == CellType.EMPTY) {
+                cells.put(pos, CellType.ENEMY);
+                enemiesPlaced++;
+            }
+        }
+    }
+
+    public CellType getCellType(Position position) {
+        return cells.getOrDefault(position, CellType.EMPTY);
+    }
+
+    public void setCellType(Position position, CellType type) {
+        if (isValidPosition(position)) {
+            cells.put(position, type);
+        }
+    }
+
+    public boolean isValidPosition(Position position) {
+        return position.getX() >= 0 && position.getX() < width &&
+                position.getY() >= 0 && position.getY() < height;
     }
 
     public int getWidth() {
@@ -25,60 +81,5 @@ public class GridMap {
 
     public int getHeight() {
         return height;
-    }
-
-    public CellType getCellType(Position position) {
-        return gridContents.getOrDefault(position, CellType.EMPTY);
-    }
-
-    public void setCellType(Position position, CellType type) {
-        if (isValidPosition(position)) {
-            gridContents.put(position, type);
-        }
-    }
-
-    public boolean isValidPosition(Position pos) {
-        return pos.getX() >= 0 && pos.getX() < width &&
-                pos.getY() >= 0 && pos.getY() < height;
-    }
-
-    private void generateDefaultMap() {
-        gridContents.clear();
-        List<Position> availablePositions = new ArrayList<>();
-
-        // Raccogliamo tutte le posizioni rigorosamente entro i confini, escludendo lo spawn (0,0)
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Position pos = new Position(x, y);
-                if (!(x == 0 && y == 0)) {
-                    availablePositions.add(pos);
-                }
-            }
-        }
-
-        Collections.shuffle(availablePositions, new Random());
-
-        int index = 0;
-
-        // 1. Posizioniamo esattamente 5 Rune
-        for (int i = 0; i < 5; i++) {
-            if (index < availablePositions.size()) {
-                setCellType(availablePositions.get(index++), CellType.RUNE);
-            }
-        }
-
-        // 2. Posizioniamo ben 8 Nemici (Guardiani dei Ghiacci)
-        for (int i = 0; i < 8; i++) {
-            if (index < availablePositions.size()) {
-                setCellType(availablePositions.get(index++), CellType.ENEMY);
-            }
-        }
-
-        // 3. Posizioniamo i restanti Ostacoli (es. 20 blocchi di ghiaccio)
-        for (int i = 0; i < 20; i++) {
-            if (index < availablePositions.size()) {
-                setCellType(availablePositions.get(index++), CellType.OBSTACLE);
-            }
-        }
     }
 }
