@@ -1,5 +1,7 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow.controller;
 
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.Player;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
@@ -9,35 +11,34 @@ import javafx.scene.Scene;
 public class GameController {
     private final GridMap map;
     private final GameView view;
-    private Position heroPos;
-
-    // Statistiche dell'eroe
-    private int hp = 100;
-    private final int maxHp = 100;
-    private int cold = 0;
-    private int runesCollected = 0;
+    private final Player player;
+    private final long startTime;
 
     public GameController(String heroName) {
-        // Inizializziamo mappa 10x10 e vista
+        // Inizializziamo mappa 10x10, giocatore e vista
         this.map = new GridMap(10, 10);
+        this.player = new Player(heroName, 0, 0); // Eroe posizionato a (0,0)
         this.view = new GameView(heroName);
-
-        // Posizione iniziale dell'eroe (es. in alto a sinistra a coordinate 0,0)
-        this.heroPos = new Position(0, 0);
+        this.startTime = System.currentTimeMillis();
 
         // Primo rendering e aggiornamento statistiche
-        this.view.renderMap(map, heroPos);
-        this.view.updateStats(hp, maxHp, cold, runesCollected);
+        updateView();
         this.view.logMessage("[SISTEMA] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
     }
 
     /**
-     * Collega gli eventi della tastiera alla Scene principale di JavaFX
+     * Collega gli eventi della tastiera e i bottoni dell'interfaccia.
      */
     public void initControls(Scene scene) {
+        // Collegamento del pulsante Accampati (Riposa)
+        view.getCampButton().setOnAction(e -> handleRest());
+
         scene.setOnKeyPressed(event -> {
-            int newX = heroPos.getX();
-            int newY = heroPos.getY();
+            if (player.isDead()) return;
+
+            Position currentPos = player.getPosition();
+            int newX = currentPos.getX();
+            int newY = currentPos.getY();
 
             // Gestione dei tasti direzionali (Frecce o W, A, S, D)
             switch (event.getCode()) {
@@ -69,22 +70,39 @@ public class GameController {
 
                 // 2. Verifica che non ci sia un ostacolo di ghiaccio
                 if (cellType != CellType.OBSTACLE) {
-                    heroPos = targetPos; // Aggiorna la posizione dell'eroe
+                    player.setPosition(targetPos); // Aggiorna la posizione dell'eroe
+                    player.reduceFrostResistance(2); // Consumo base di gelo per ogni passo
 
-                    // 3. Controlla se la cella contiene una runa
-                    if (cellType == CellType.RUNE) {
-                        map.setCellType(targetPos, CellType.EMPTY); // Rimuovi la runa dalla mappa
-                        runesCollected++;
-                        view.logMessage("[EVENTO] Hai raccolto una runa! (" + runesCollected + " / 5)");
+                    // 3. Gestione del tipo di cella calpestata
+                    switch (cellType) {
+                        case RUNE:
+                            player.collectRune();
+                            map.setCellType(targetPos, CellType.EMPTY); // Rimuovi la runa dalla mappa
+                            view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + player.getRunesCollected() + " / 5)");
 
-                        if (runesCollected >= 5) {
-                            view.logMessage("[VITTORIA] Hai recuperato tutte le rune di Niflheim!");
-                        }
+                            if (player.getRunesCollected() >= 5) {
+                                handleVictory();
+                            }
+                            break;
+
+                        case ENEMY:
+                            view.logMessage("[DUELLO] Un Guardiano dei Ghiacci ti sbarra la strada!");
+                            // Mostra la schermata di duello tattico overlay
+                            view.showDuelOverlay(
+                                    () -> resolveAttack(targetPos),
+                                    () -> resolveDefense(targetPos),
+                                    () -> resolveFlee(targetPos)
+                            );
+                            break;
+
+                        case EMPTY:
+                        default:
+                            view.logMessage("[ESPLORAZIONE] Avanzi tra la neve e il gelo...");
+                            break;
                     }
 
-                    // 4. Ridisegna la mappa e aggiorna la barra laterale
-                    view.renderMap(map, heroPos);
-                    view.updateStats(hp, maxHp, cold, runesCollected);
+                    checkGameOver();
+                    updateView();
 
                 } else {
                     view.logMessage("[ATTENZIONE] Un blocco di ghiaccio impenetrabile sbarra la strada!");
@@ -93,6 +111,62 @@ public class GameController {
                 view.logMessage("[ATTENZIONE] Sei ai confini della mappa!");
             }
         });
+    }
+
+    private void resolveAttack(Position targetPos) {
+        player.takeDamage(15);
+        map.setCellType(targetPos, CellType.EMPTY);
+        view.logMessage("[COMBATTIMENTO] Sconfiggi il mostro con un Attacco Furente (-15 HP). Via libera!");
+        checkGameOver();
+        updateView();
+    }
+
+    private void resolveDefense(Position targetPos) {
+        player.reduceFrostResistance(15);
+        map.setCellType(targetPos, CellType.EMPTY);
+        view.logMessage("[DUELLO] Resisti dietro le tue difese, ma il gelo ti consuma (-15 Gelo).");
+        checkGameOver();
+        updateView();
+    }
+
+    private void resolveFlee(Position targetPos) {
+        player.takeDamage(5);
+        player.reduceFrostResistance(5);
+        view.logMessage("[FUGA] Eviti lo scontro diretto subendo lievi danni (-5 HP, -5 Gelo).");
+        checkGameOver();
+        updateView();
+    }
+
+    private void handleRest() {
+        if (player.isDead()) return;
+
+        if (player.getHp() >= player.getMaxHp() && player.getFrostResistance() >= player.getMaxFrost()) {
+            view.logMessage("[ACCAMPAMENTO] Sei già al massimo delle tue forze!");
+            return;
+        }
+
+        player.healHp(25);
+        player.restoreFrostResistance(30);
+        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+25 HP, +30 Gelo).");
+        updateView();
+    }
+
+    private void checkGameOver() {
+        if (player.isDead()) {
+            view.logMessage("[GAME OVER] L'eroe è caduto tra i ghiacci di Niflheim...");
+            ScoreManager.addAttempt(player.getName(), player.getRunesCollected(), "Sconfitto");
+        }
+    }
+
+    private void handleVictory() {
+        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+        ScoreManager.addVictory(player.getName(), elapsedSeconds);
+        view.logMessage("[VITTORIA] Hai recuperato tutte e 5 le rune di Niflheim!");
+    }
+
+    private void updateView() {
+        view.renderMap(map, player.getPosition());
+        view.updateStats(player.getHp(), player.getMaxHp(), player.getFrostResistance(), player.getRunesCollected());
     }
 
     public GameView getView() {
