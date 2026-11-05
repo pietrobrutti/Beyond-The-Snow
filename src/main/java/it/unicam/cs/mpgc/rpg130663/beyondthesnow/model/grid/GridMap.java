@@ -60,15 +60,22 @@ public class GridMap {
 
         int index = 0;
 
-        // Posizioniamo esattamente 5 Rune
+        // 1. Posizioniamo esattamente 5 Rune
         for (int i = 0; i < 5; i++) {
             if (index < availablePositions.size()) {
                 setCellType(availablePositions.get(index++), CellType.RUNE);
             }
         }
 
-        // Posizioniamo esattamente 32 Ostacoli
-        for (int i = 0; i < 32; i++) {
+        // 2. Posizioniamo ben 8 Nemici (Guardiani dei Ghiacci)
+        for (int i = 0; i < 8; i++) {
+            if (index < availablePositions.size()) {
+                setCellType(availablePositions.get(index++), CellType.ENEMY);
+            }
+        }
+
+        // 3. Posizioniamo i restanti Ostacoli (es. 20 blocchi di ghiaccio)
+        for (int i = 0; i < 20; i++) {
             if (index < availablePositions.size()) {
                 setCellType(availablePositions.get(index++), CellType.OBSTACLE);
             }
