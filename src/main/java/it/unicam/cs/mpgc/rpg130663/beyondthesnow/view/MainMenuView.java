@@ -195,13 +195,7 @@ public class MainMenuView {
     }
 
     private void initActions() {
-        rulesButton.setOnAction(e -> showCustomDialog(
-                "❄ GUIDA ALLE LANDE GHIACCIATE ❄",
-                "• OBIETTIVO: Esplora la griglia e raccogli tutte le 5 rune magiche per vincere la partita.\n\n" +
-                        "• SOPRAVVIVENZA: Tieni d'occhio i tuoi parametri vitali e il freddo.\n\n" +
-                        "• COMANDI: Usa i tasti FRECCIA o WASD per muoverti sulla mappa."
-        ));
-
+        rulesButton.setOnAction(e -> showGuideDialog());
         leaderboardButton.setOnAction(e -> showArchiveDialog());
 
         nameInput.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -211,39 +205,67 @@ public class MainMenuView {
         });
     }
 
-    private void showCustomDialog(String titleText, String contentText) {
+    // Finestra della Guida aggiornata con le Cronache di Niflheim e le nuove meccaniche
+    private void showGuideDialog() {
         StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.75);");
+        overlay.setStyle("-fx-background-color: rgba(5, 12, 22, 0.85);");
 
         VBox dialogBox = new VBox(15);
         dialogBox.setAlignment(Pos.CENTER);
-        dialogBox.setMaxWidth(460);
-        dialogBox.setMaxHeight(300);
-        dialogBox.setPadding(new Insets(20));
+        dialogBox.setMaxWidth(520);
+        dialogBox.setPadding(new Insets(25));
         dialogBox.setStyle(
-                "-fx-background-color: rgba(10, 30, 60, 0.95); " +
+                "-fx-background-color: linear-gradient(to bottom, rgba(15, 28, 44, 0.95), rgba(10, 18, 30, 0.98)); " +
                         "-fx-background-radius: 12px; " +
-                        "-fx-border-color: #81D4FA; " +
+                        "-fx-border-color: rgba(179, 229, 252, 0.4); " +
                         "-fx-border-radius: 12px; " +
                         "-fx-border-width: 2px; " +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(129, 212, 250, 0.4), 20, 0, 0, 0);"
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 15, 0, 0, 0);"
         );
 
-        Label titleLabel = new Label(titleText);
-        titleLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 14px; -fx-font-weight: bold; -fx-font-family: 'Arial';");
+        Label titleLabel = new Label("❄ LE CRONACHE DI NIFLHEIM ❄");
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #E3F2FD; -fx-font-family: 'Arial';");
 
-        Label contentLabel = new Label(contentText);
-        contentLabel.setWrapText(true);
-        contentLabel.setStyle("-fx-text-fill: #B3E5FC; -fx-font-size: 12px; -fx-font-family: 'Arial'; -fx-alignment: center;");
+        Label loreLabel = new Label("La gelida morsa di Thrym, il Re dei Ghiacci, ha avvolto le terre eterne di Niflheim, spegnendo ogni scintilla di calore...");
+        loreLabel.setWrapText(true);
+        loreLabel.setStyle("-fx-font-size: 12px; -fx-font-style: italic; -fx-text-fill: #B3E5FC; -fx-text-alignment: center; -fx-font-family: 'Arial';");
 
-        Button closeBtn = createStyledButton("CHIUDI", 120);
-        closeBtn.setOnAction(ev -> root.getChildren().remove(overlay));
+        VBox rulesBox = new VBox(10);
+        rulesBox.setAlignment(Pos.CENTER_LEFT);
+        rulesBox.setPadding(new Insets(10, 0, 10, 0));
 
-        dialogBox.getChildren().addAll(titleLabel, contentLabel, closeBtn);
+        rulesBox.getChildren().addAll(
+                createRuleItem("🔮 OBIETTIVO:", "Esplora la griglia insidiosa e recupera tutte e 5 le Rune Magiche per spezzare il maleficio e vincere."),
+                createRuleItem("❄ SOPRAVVIVENZA:", "Tieni d'occhio i parametri vitali. Se la Resistenza al Gelo scende sotto il 20%, scatterà una ritirata d'emergenza!"),
+                createRuleItem("⛺ ACCAMPAMENTI:", "Hai a disposizione un massimo di 3 accampamenti per partita per riposare al fuoco (+15 HP, +20% Gelo)."),
+                createRuleItem("🔥 MAGIA DEL FUOCO:", "Se il ghiaccio ti sbarra la strada, usa 'Sciogli Ghiaccio' (-15 HP) per fondere l'ostacolo adiacente con il bordino rosso."),
+                createRuleItem("🎮 COMANDI:", "Usa i tasti FRECCIA o WASD per muoverti sulla mappa e interagire con le lande ghiacciate.")
+        );
+
+        Button closeBtn = createStyledButton("CHIUDI", 140);
+        closeBtn.setOnAction(e -> root.getChildren().remove(overlay));
+
+        dialogBox.getChildren().addAll(titleLabel, loreLabel, rulesBox, closeBtn);
         overlay.getChildren().add(dialogBox);
         StackPane.setAlignment(dialogBox, Pos.CENTER);
 
         root.getChildren().add(overlay);
+    }
+
+    private HBox createRuleItem(String title, String description) {
+        HBox box = new HBox(6);
+        box.setAlignment(Pos.TOP_LEFT);
+
+        Label titleLbl = new Label(title);
+        titleLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #FFE082; -fx-font-family: 'Arial';");
+        titleLbl.setMinWidth(130);
+
+        Label descLbl = new Label(description);
+        descLbl.setWrapText(true);
+        descLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #E1F5FE; -fx-font-family: 'Arial';");
+
+        box.getChildren().addAll(titleLbl, descLbl);
+        return box;
     }
 
     // Finestra Archivio di Niflheim (Riorganizzata a schede a blocco pulite e centrate)

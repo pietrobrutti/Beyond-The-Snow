@@ -31,7 +31,7 @@ public class GridMap {
 
         // 2. Posiziona gli Ostacoli di ghiaccio (lasciando libera la zona di spawn iniziale)
         int obstaclesPlaced = 0;
-        while (obstaclesPlaced < 30) {
+        while (obstaclesPlaced < 32) {
             Position pos = new Position(random.nextInt(width), random.nextInt(height));
             boolean isNearStart = (pos.getX() <= 1 && pos.getY() <= 1);
 
@@ -57,7 +57,7 @@ public class GridMap {
 
         // 4. Posiziona gli 8 Nemici nascosti (anch'essi raggiungibili)
         int enemiesPlaced = 0;
-        while (enemiesPlaced < 8) {
+        while (enemiesPlaced < 10) {
             Position pos = new Position(random.nextInt(width), random.nextInt(height));
             boolean isNearStart = (pos.getX() <= 1 && pos.getY() <= 1);
 

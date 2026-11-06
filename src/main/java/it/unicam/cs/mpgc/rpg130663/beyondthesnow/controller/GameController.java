@@ -148,9 +148,10 @@ public class GameController {
         }
 
         campsRemaining--;
-        player.healHp(30);
-        player.restoreFrostResistance(35);
-        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco (+30 HP, +35% Gelo). Accampamenti rimasti: " + campsRemaining);
+        // Valori bilanciati per una maggiore sfida survival
+        player.healHp(15);
+        player.restoreFrostResistance(20);
+        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco (+15 HP, +20% Gelo). Accampamenti rimasti: " + campsRemaining);
 
         // Aggiorna il testo del pulsante per mostrare quanti ne restano
         view.getCampButton().setText("⛺ Accampati (" + campsRemaining + "/3)");
