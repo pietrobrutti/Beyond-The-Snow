@@ -71,6 +71,7 @@ public class GameController {
                     if (player.getFrostResistance() < 20) {
                         view.logMessage("[PERICOLO] Il gelo è troppo intenso! Sei costretto a una ritirata d'emergenza!");
                         player.restoreFrostResistance(15);
+                        view.triggerScreenShake(); // ❄ Shake per il pericolo critico
                         updateView();
                         return;
                     }
@@ -89,6 +90,7 @@ public class GameController {
                         case ENEMY:
                             view.logMessage("[ATTACCO] Imboscata! Una creatura dei ghiacci ti assale!");
                             map.setCellType(targetPos, CellType.EMPTY);
+                            view.triggerScreenShake(); // ❄ Shake per l'imboscata
 
                             view.showClassicPokemonBattleOverlay(
                                     player.getName(),
@@ -99,6 +101,7 @@ public class GameController {
                                         player.reduceFrostResistance(coldDamage);
                                         player.takeDamage(hpDamage);
                                         view.logMessage("[COMBATTIMENTO] Subisci colpi: -" + coldDamage + "% Gelo, -" + hpDamage + " HP.");
+                                        view.triggerScreenShake(); // ❄ Shake quando subisci danni in combattimento
                                         checkGameOver();
                                         updateView();
                                     },
@@ -196,6 +199,9 @@ public class GameController {
             player.takeDamage(15);
             map.setCellType(targetObstacle, CellType.EMPTY);
             view.logMessage("[MAGIA] Bruci la tua energia vitale per sciogliere il blocco di ghiaccio! (-15 HP)");
+
+            // ❄ Attiva il tremolio dello schermo per l'impatto della magia!
+            view.triggerScreenShake();
 
             checkGameOver();
             updateView();

@@ -4,6 +4,7 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
 import javafx.animation.PauseTransition;
+import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -195,6 +196,16 @@ public class GameView {
         this.highlightedIcePos = pos;
     }
 
+    // --- CHICCA 1: Effetto Shake dello Schermo ---
+    public void triggerScreenShake() {
+        TranslateTransition tt = new TranslateTransition(Duration.millis(50), root);
+        tt.setFromX(0);
+        tt.setByX(6);
+        tt.setCycleCount(4);
+        tt.setAutoReverse(true);
+        tt.play();
+    }
+
     public void renderMap(GridMap map, Position heroPos) {
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int y = 0; y < GRID_SIZE; y++) {
@@ -228,7 +239,6 @@ public class GameView {
                             break;
 
                         case OBSTACLE:
-                            // Se questo blocco di ghiaccio è quello selezionato/adiacente, metti il bordino rosso!
                             boolean isHighlighted = (highlightedIcePos != null && highlightedIcePos.equals(currentPos));
                             String borderColor = isHighlighted ? "#FF1744" : "#CFD8DC";
                             double borderWidth = isHighlighted ? 3.0 : 1.5;
