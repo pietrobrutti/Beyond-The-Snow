@@ -13,6 +13,7 @@ public class GameController {
     private final GameView view;
     private final Player player;
     private final long startTime;
+    private int campsRemaining = 3; // Massimo 3 accampamenti a partita
 
     public GameController(String heroName) {
         this.map = new GridMap(10, 10);
@@ -22,6 +23,7 @@ public class GameController {
 
         updateView();
         this.view.logMessage("[SISTEMA] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
+        this.view.logMessage("[SISTEMA] Hai a disposizione ⛺ 3 Accampamenti di emergenza per tutta la partita.");
     }
 
     public void initControls(Scene scene) {
@@ -135,14 +137,27 @@ public class GameController {
     private void handleRest() {
         if (player.isDead()) return;
 
-        if (player.getHp() >= player.getMaxHp() && player.getFrostResistance() >= player.getMaxFrost()) {
-            view.logMessage("[ACCAMPAMENTO] Sei già al massimo delle tue forze!");
+        if (campsRemaining <= 0) {
+            view.logMessage("[ACCAMPAMENTO] Hai esaurito tutti gli accampamenti disponibili per questa partita!");
             return;
         }
 
+        if (player.getHp() >= player.getMaxHp() && player.getFrostResistance() >= player.getMaxFrost()) {
+            view.logMessage("[ACCAMPAMENTO] Sei già al massimo delle tue forze, inutile sprecare un accampamento!");
+            return;
+        }
+
+        campsRemaining--;
         player.healHp(30);
         player.restoreFrostResistance(35);
-        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco dell'accampamento (+30 HP, +35% Resistenza al Gelo).");
+        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco (+30 HP, +35% Gelo). Accampamenti rimasti: " + campsRemaining);
+
+        // Aggiorna il testo del pulsante per mostrare quanti ne restano
+        view.getCampButton().setText("⛺ Accampati (" + campsRemaining + "/3)");
+        if (campsRemaining == 0) {
+            view.getCampButton().setDisable(true);
+        }
+
         updateView();
     }
 
@@ -213,7 +228,6 @@ public class GameController {
     }
 
     private void updateView() {
-        // Cerca se c'è un blocco di ghiaccio adiacente all'eroe e segnalalo alla vista per mettergli il bordino rosso
         Position adjacentObstacle = findAdjacentObstacle();
         view.setHighlightedIcePos(adjacentObstacle);
 
