@@ -1,3 +1,4 @@
+pie,0,Sconfitto
 oooo,0,Sconfitto
 pie,0,Sconfitto
 pie,0,Sconfitto
@@ -7,4 +8,3 @@ pie,4,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,0,Accampato / Ritirato
-pie,2,Accampato / Ritirato

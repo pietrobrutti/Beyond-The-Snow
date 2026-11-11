@@ -4,8 +4,10 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.GameEngine;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.BattleView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameOverView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
 import javafx.scene.Scene;
 
 public class GameController {
@@ -13,7 +15,7 @@ public class GameController {
     private final GameView view;
     private Scene scene;
     private final String heroName;
-    private Runnable onReturnToMenu; // Callback per tornare al menu principale
+    private Runnable onReturnToMenu;
 
     public GameController(String heroName) {
         this.heroName = heroName;
@@ -25,7 +27,6 @@ public class GameController {
         this.view.logMessage("[SISTEMA] Hai a disposizione ⛺ 3 Accampamenti di emergenza per tutta la partita.");
     }
 
-    // Permette all'applicazione principale di registrare l'azione per tornare al menu
     public void setOnReturnToMenu(Runnable onReturnToMenu) {
         this.onReturnToMenu = onReturnToMenu;
     }
@@ -82,11 +83,18 @@ public class GameController {
                             engine.getMap().setCellType(targetPos, CellType.EMPTY);
                             view.triggerScreenShake();
 
-                            view.showClassicPokemonBattleOverlay(
+                            final BattleView[] battleViewRef = new BattleView[1];
+
+                            battleViewRef[0] = new BattleView(
                                     engine.getPlayer().getName(),
                                     engine.getPlayer().getHp(),
                                     engine.getPlayer().getMaxHp(),
                                     engine.getPlayer().getFrostResistance(),
+                                    GameView.HERO_IMAGE,
+                                    GameView.GOBLIN_IMAGE,
+                                    GameView.WRAITH_IMAGE,
+                                    GameView.TROLL_IMAGE,
+                                    GameView.THRYM_IMAGE,
                                     (coldDamage, hpDamage) -> {
                                         engine.getPlayer().reduceFrostResistance(coldDamage);
                                         engine.getPlayer().takeDamage(hpDamage);
@@ -97,16 +105,24 @@ public class GameController {
                                     },
                                     () -> {
                                         view.logMessage("[COMBATTIMENTO] Hai sconfitto la creatura!");
+                                        if (battleViewRef[0] != null) {
+                                            view.getRoot().getChildren().remove(battleViewRef[0].getOverlay());
+                                        }
                                         checkGameOver();
                                         updateView();
                                     },
                                     () -> {
                                         engine.getPlayer().reduceFrostResistance(15);
                                         view.logMessage("[FUGA] Fuga rocambolesca, perdi ulteriore resistenza al gelo.");
+                                        if (battleViewRef[0] != null) {
+                                            view.getRoot().getChildren().remove(battleViewRef[0].getOverlay());
+                                        }
                                         checkGameOver();
                                         updateView();
                                     }
                             );
+
+                            view.getRoot().getChildren().add(battleViewRef[0].getOverlay());
                         }
                         default -> view.logMessage("[ESPLORAZIONE] Avanzi tra la neve e il gelo...");
                     }
@@ -121,6 +137,9 @@ public class GameController {
                 view.logMessage("[ATTENZIONE] Sei ai confini della mappa!");
             }
         });
+
+        // Assicura il focus immediato all'avvio dei controlli
+        view.getRoot().requestFocus();
     }
 
     private void handleRest() {
@@ -174,7 +193,6 @@ public class GameController {
         if (engine.isGameOver()) {
             ScoreManager.addAttempt(engine.getPlayer().getName(), engine.getPlayer().getRunesCollected(), "Sconfitto");
 
-            // Azione per il tasto RIPROVA: ricrea un nuovo GameController e lo avvia sulla scena corrente
             Runnable restartAction = () -> {
                 if (scene != null) {
                     GameController newController = new GameController(heroName);
@@ -183,15 +201,13 @@ public class GameController {
                     if (onReturnToMenu != null) {
                         newController.setOnReturnToMenu(onReturnToMenu);
                     }
+                    scene.getRoot().requestFocus();
                 }
             };
 
-            // Azione per il tasto MENU PRINCIPALE: richiama il callback del menu se impostato
             Runnable menuAction = () -> {
                 if (onReturnToMenu != null) {
                     onReturnToMenu.run();
-                } else {
-                    System.out.println("[SISTEMA] Callback del Menu Principale non configurato.");
                 }
             };
 
@@ -208,11 +224,30 @@ public class GameController {
         ScoreManager.addVictory(engine.getPlayer().getName(), elapsedSeconds);
         view.logMessage("[VITTORIA] Hai recuperato tutte e 5 le rune di Niflheim!");
 
-        view.showVictoryOverlay(
-                elapsedSeconds,
-                () -> view.logMessage("[SISTEMA] Riavvio non ancora implementato."),
-                () -> view.logMessage("[SISTEMA] Ritorno al menu non ancora implementato.")
-        );
+        Runnable restartAction = () -> {
+            if (scene != null) {
+                GameController newController = new GameController(heroName);
+                scene.setRoot(newController.getView().getRoot());
+                newController.initControls(scene);
+                if (onReturnToMenu != null) {
+                    newController.setOnReturnToMenu(onReturnToMenu);
+                }
+                // Forza il focus sulla nuova root per riabilitare immediatamente i comandi da tastiera
+                scene.getRoot().requestFocus();
+            }
+        };
+
+        Runnable menuAction = () -> {
+            if (onReturnToMenu != null) {
+                onReturnToMenu.run();
+            }
+        };
+
+        VictoryView victoryView = new VictoryView(elapsedSeconds, restartAction, menuAction);
+
+        if (scene != null) {
+            scene.setRoot(victoryView.getRoot());
+        }
     }
 
     private void updateView() {
