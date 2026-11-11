@@ -12,16 +12,23 @@ public class GameOverView {
     private final Button restartButton;
     private final Button menuButton;
 
-    public GameOverView(String heroName) {
+    public GameOverView(Runnable onRestart, Runnable onMenu) {
         this.root = new StackPane();
         this.restartButton = new Button();
         this.menuButton = new Button();
 
-        initUI(heroName);
+        // Colleghiamo le azioni ai bottoni
+        if (onRestart != null) {
+            restartButton.setOnAction(e -> onRestart.run());
+        }
+        if (onMenu != null) {
+            menuButton.setOnAction(e -> onMenu.run());
+        }
+
+        initUI();
     }
 
-    private void initUI(String heroName) {
-        // --- 1. Sfondo con l'immagine di Game Over ---
+    private void initUI() {
         ImageView backgroundView = new ImageView();
         try {
             String imagePath = getClass().getResource("/images/gameover_background.png").toExternalForm();
@@ -37,21 +44,17 @@ public class GameOverView {
             root.setStyle("-fx-background-color: #1A0A0A;");
         }
 
-        // --- 2. Container per i Pulsanti al centro del riquadro ---
         VBox buttonsContainer = new VBox(15);
         buttonsContainer.setAlignment(Pos.CENTER);
-
-        // Posizionamento verticale nel riquadro
         buttonsContainer.setTranslateY(135);
 
-        // --- 3. Stile e Lunghezza fissa dei Pulsanti ---
         String baseButtonStyle =
                 "-fx-background-color: rgba(13, 37, 63, 0.8); " +
                         "-fx-text-fill: #E1F5FE; " +
                         "-fx-font-family: 'Arial', sans-serif; " +
                         "-fx-font-size: 14px; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-padding: 12px 0px; " + // Padding orizzontale gestito dalla larghezza fissa
+                        "-fx-padding: 12px 0px; " +
                         "-fx-background-radius: 6px; " +
                         "-fx-border-color: #4FC3F7; " +
                         "-fx-border-radius: 6px; " +
@@ -63,39 +66,25 @@ public class GameOverView {
                 "-fx-background-color: rgba(21, 101, 192, 0.95); " +
                         "-fx-border-color: #81D4FA;";
 
-        // Impostiamo una larghezza fissa identica per entrambi i pulsanti
         double buttonWidth = 240;
 
-        restartButton.setText("RIPROVA");
-        restartButton.setMinWidth(buttonWidth);
-        restartButton.setMaxWidth(buttonWidth);
-        restartButton.setStyle(baseButtonStyle);
-        restartButton.setOnMouseEntered(e -> restartButton.setStyle(baseButtonStyle + hoverButtonStyle));
-        restartButton.setOnMouseExited(e -> restartButton.setStyle(baseButtonStyle));
-
-        menuButton.setText("MENU PRINCIPALE");
-        menuButton.setMinWidth(buttonWidth);
-        menuButton.setMaxWidth(buttonWidth);
-        menuButton.setStyle(baseButtonStyle);
-        menuButton.setOnMouseEntered(e -> menuButton.setStyle(baseButtonStyle + hoverButtonStyle));
-        menuButton.setOnMouseExited(e -> menuButton.setStyle(baseButtonStyle));
+        configureButton(restartButton, "RIPROVA", buttonWidth, baseButtonStyle, hoverButtonStyle);
+        configureButton(menuButton, "MENU PRINCIPALE", buttonWidth, baseButtonStyle, hoverButtonStyle);
 
         buttonsContainer.getChildren().addAll(restartButton, menuButton);
 
-        // --- 4. Assemblaggio finale ---
         root.getChildren().addAll(backgroundView, buttonsContainer);
         StackPane.setAlignment(backgroundView, Pos.CENTER);
     }
 
-    public StackPane getRoot() {
-        return root;
+    private void configureButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
+        button.setText(text);
+        button.setMinWidth(width);
+        button.setMaxWidth(width);
+        button.setStyle(baseStyle);
+        button.setOnMouseEntered(e -> button.setStyle(baseStyle + hoverStyle));
+        button.setOnMouseExited(e -> button.setStyle(baseStyle));
     }
 
-    public Button getRestartButton() {
-        return restartButton;
-    }
-
-    public Button getMenuButton() {
-        return menuButton;
-    }
+    public StackPane getRoot() { return root; }
 }

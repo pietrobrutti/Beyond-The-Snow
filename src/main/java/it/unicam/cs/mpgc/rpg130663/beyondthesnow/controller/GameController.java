@@ -4,14 +4,19 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.GameEngine;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameOverView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
 import javafx.scene.Scene;
 
 public class GameController {
     private final GameEngine engine;
     private final GameView view;
+    private Scene scene;
+    private final String heroName;
+    private Runnable onReturnToMenu; // Callback per tornare al menu principale
 
     public GameController(String heroName) {
+        this.heroName = heroName;
         this.engine = new GameEngine(heroName, 10, 10);
         this.view = new GameView(heroName);
 
@@ -20,7 +25,13 @@ public class GameController {
         this.view.logMessage("[SISTEMA] Hai a disposizione ⛺ 3 Accampamenti di emergenza per tutta la partita.");
     }
 
+    // Permette all'applicazione principale di registrare l'azione per tornare al menu
+    public void setOnReturnToMenu(Runnable onReturnToMenu) {
+        this.onReturnToMenu = onReturnToMenu;
+    }
+
     public void initControls(Scene scene) {
+        this.scene = scene;
         view.getCampButton().setOnAction(e -> handleRest());
         view.getMeltButton().setOnAction(e -> handleMeltIce());
 
@@ -161,13 +172,34 @@ public class GameController {
 
     private void checkGameOver() {
         if (engine.isGameOver()) {
-            view.logMessage("[GAME OVER] L'eroe è caduto tra i ghiacci di Niflheim...");
             ScoreManager.addAttempt(engine.getPlayer().getName(), engine.getPlayer().getRunesCollected(), "Sconfitto");
 
-            view.showGameOverOverlay(
-                    () -> view.logMessage("[SISTEMA] Riavvio non ancora implementato."),
-                    () -> view.logMessage("[SISTEMA] Ritorno al menu non ancora implementato.")
-            );
+            // Azione per il tasto RIPROVA: ricrea un nuovo GameController e lo avvia sulla scena corrente
+            Runnable restartAction = () -> {
+                if (scene != null) {
+                    GameController newController = new GameController(heroName);
+                    scene.setRoot(newController.getView().getRoot());
+                    newController.initControls(scene);
+                    if (onReturnToMenu != null) {
+                        newController.setOnReturnToMenu(onReturnToMenu);
+                    }
+                }
+            };
+
+            // Azione per il tasto MENU PRINCIPALE: richiama il callback del menu se impostato
+            Runnable menuAction = () -> {
+                if (onReturnToMenu != null) {
+                    onReturnToMenu.run();
+                } else {
+                    System.out.println("[SISTEMA] Callback del Menu Principale non configurato.");
+                }
+            };
+
+            GameOverView gameOverView = new GameOverView(restartAction, menuAction);
+
+            if (scene != null) {
+                scene.setRoot(gameOverView.getRoot());
+            }
         }
     }
 

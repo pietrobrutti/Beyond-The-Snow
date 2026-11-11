@@ -1,7 +1,10 @@
+oooo,0,Sconfitto
+pie,0,Sconfitto
+pie,0,Sconfitto
+pie,0,Sconfitto
 pie,0,Accampato / Ritirato
 pie,4,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,0,Accampato / Ritirato
 pie,2,Accampato / Ritirato
-pie,3,Accampato / Ritirato
