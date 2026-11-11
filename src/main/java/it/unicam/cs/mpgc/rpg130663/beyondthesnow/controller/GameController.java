@@ -1,25 +1,19 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow.controller;
 
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.Player;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.GameEngine;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.CellType;
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.GridMap;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
 import javafx.scene.Scene;
 
 public class GameController {
-    private final GridMap map;
+    private final GameEngine engine;
     private final GameView view;
-    private final Player player;
-    private final long startTime;
-    private int campsRemaining = 3; // Massimo 3 accampamenti a partita
 
     public GameController(String heroName) {
-        this.map = new GridMap(10, 10);
-        this.player = new Player(heroName, 0, 0);
+        this.engine = new GameEngine(heroName, 10, 10);
         this.view = new GameView(heroName);
-        this.startTime = System.currentTimeMillis();
 
         updateView();
         this.view.logMessage("[SISTEMA] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
@@ -31,77 +25,62 @@ public class GameController {
         view.getMeltButton().setOnAction(e -> handleMeltIce());
 
         scene.setOnKeyPressed(event -> {
-            if (player.isDead()) return;
+            if (engine.isGameOver()) return;
 
-            Position currentPos = player.getPosition();
+            Position currentPos = engine.getPlayer().getPosition();
             int newX = currentPos.getX();
             int newY = currentPos.getY();
 
             switch (event.getCode()) {
-                case UP:
-                case W:
-                    newY--;
-                    break;
-                case DOWN:
-                case S:
-                    newY++;
-                    break;
-                case LEFT:
-                case A:
-                    newX--;
-                    break;
-                case RIGHT:
-                case D:
-                    newX++;
-                    break;
-                default:
-                    return;
+                case UP, W -> newY--;
+                case DOWN, S -> newY++;
+                case LEFT, A -> newX--;
+                case RIGHT, D -> newX++;
+                default -> { return; }
             }
 
             Position targetPos = new Position(newX, newY);
 
-            if (map.isValidPosition(targetPos)) {
-                CellType cellType = map.getCellType(targetPos);
+            if (engine.getMap().isValidPosition(targetPos)) {
+                CellType cellType = engine.getMap().getCellType(targetPos);
 
                 if (cellType != CellType.OBSTACLE) {
-                    player.setPosition(targetPos);
-                    player.reduceFrostResistance(2);
+                    engine.getPlayer().setPosition(targetPos);
+                    engine.getPlayer().reduceFrostResistance(2);
 
-                    // --- CONTROLLO DEL GELO CRITICO (Sotto il 20%) ---
-                    if (player.getFrostResistance() < 20) {
+                    if (engine.getPlayer().getFrostResistance() < 20) {
                         view.logMessage("[PERICOLO] Il gelo è troppo intenso! Sei costretto a una ritirata d'emergenza!");
-                        player.restoreFrostResistance(15);
-                        view.triggerScreenShake(); // ❄ Shake per il pericolo critico
+                        engine.getPlayer().restoreFrostResistance(15);
+                        view.triggerScreenShake();
                         updateView();
                         return;
                     }
 
                     switch (cellType) {
-                        case RUNE:
-                            player.collectRune();
-                            map.setCellType(targetPos, CellType.EMPTY);
-                            view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + player.getRunesCollected() + " / 5)");
+                        case RUNE -> {
+                            engine.getPlayer().collectRune();
+                            engine.getMap().setCellType(targetPos, CellType.EMPTY);
+                            view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + engine.getPlayer().getRunesCollected() + " / 5)");
 
-                            if (player.getRunesCollected() >= 5) {
+                            if (engine.isVictory()) {
                                 handleVictory();
                             }
-                            break;
-
-                        case ENEMY:
+                        }
+                        case ENEMY -> {
                             view.logMessage("[ATTACCO] Imboscata! Una creatura dei ghiacci ti assale!");
-                            map.setCellType(targetPos, CellType.EMPTY);
-                            view.triggerScreenShake(); // ❄ Shake per l'imboscata
+                            engine.getMap().setCellType(targetPos, CellType.EMPTY);
+                            view.triggerScreenShake();
 
                             view.showClassicPokemonBattleOverlay(
-                                    player.getName(),
-                                    player.getHp(),
-                                    player.getMaxHp(),
-                                    player.getFrostResistance(),
+                                    engine.getPlayer().getName(),
+                                    engine.getPlayer().getHp(),
+                                    engine.getPlayer().getMaxHp(),
+                                    engine.getPlayer().getFrostResistance(),
                                     (coldDamage, hpDamage) -> {
-                                        player.reduceFrostResistance(coldDamage);
-                                        player.takeDamage(hpDamage);
+                                        engine.getPlayer().reduceFrostResistance(coldDamage);
+                                        engine.getPlayer().takeDamage(hpDamage);
                                         view.logMessage("[COMBATTIMENTO] Subisci colpi: -" + coldDamage + "% Gelo, -" + hpDamage + " HP.");
-                                        view.triggerScreenShake(); // ❄ Shake quando subisci danni in combattimento
+                                        view.triggerScreenShake();
                                         checkGameOver();
                                         updateView();
                                     },
@@ -111,18 +90,14 @@ public class GameController {
                                         updateView();
                                     },
                                     () -> {
-                                        player.reduceFrostResistance(15);
+                                        engine.getPlayer().reduceFrostResistance(15);
                                         view.logMessage("[FUGA] Fuga rocambolesca, perdi ulteriore resistenza al gelo.");
                                         checkGameOver();
                                         updateView();
                                     }
                             );
-                            break;
-
-                        case EMPTY:
-                        default:
-                            view.logMessage("[ESPLORAZIONE] Avanzi tra la neve e il gelo...");
-                            break;
+                        }
+                        default -> view.logMessage("[ESPLORAZIONE] Avanzi tra la neve e il gelo...");
                     }
 
                     checkGameOver();
@@ -138,71 +113,45 @@ public class GameController {
     }
 
     private void handleRest() {
-        if (player.isDead()) return;
+        if (engine.isGameOver()) return;
 
-        if (campsRemaining <= 0) {
+        if (engine.getCampsRemaining() <= 0) {
             view.logMessage("[ACCAMPAMENTO] Hai esaurito tutti gli accampamenti disponibili per questa partita!");
             return;
         }
 
-        if (player.getHp() >= player.getMaxHp() && player.getFrostResistance() >= player.getMaxFrost()) {
+        if (!engine.canRest()) {
             view.logMessage("[ACCAMPAMENTO] Sei già al massimo delle tue forze, inutile sprecare un accampamento!");
             return;
         }
 
-        campsRemaining--;
-        // Valori bilanciati per una maggiore sfida survival
-        player.healHp(15);
-        player.restoreFrostResistance(20);
-        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco (+15 HP, +20% Gelo). Accampamenti rimasti: " + campsRemaining);
+        engine.rest();
+        view.logMessage("[ACCAMPAMENTO] Ti riposi al fuoco (+15 HP, +20% Gelo). Accampamenti rimasti: " + engine.getCampsRemaining());
 
-        // Aggiorna il testo del pulsante per mostrare quanti ne restano
-        view.getCampButton().setText("⛺ Accampati (" + campsRemaining + "/3)");
-        if (campsRemaining == 0) {
+        view.getCampButton().setText("⛺ Accampati (" + engine.getCampsRemaining() + "/3)");
+        if (engine.getCampsRemaining() == 0) {
             view.getCampButton().setDisable(true);
         }
 
         updateView();
     }
 
-    private Position findAdjacentObstacle() {
-        Position heroPos = player.getPosition();
-        int x = heroPos.getX();
-        int y = heroPos.getY();
-
-        Position[] adjacentPositions = {
-                new Position(x, y - 1),
-                new Position(x, y + 1),
-                new Position(x - 1, y),
-                new Position(x + 1, y)
-        };
-
-        for (Position adj : adjacentPositions) {
-            if (map.isValidPosition(adj) && map.getCellType(adj) == CellType.OBSTACLE) {
-                return adj;
-            }
-        }
-        return null;
-    }
-
     private void handleMeltIce() {
-        if (player.isDead()) return;
+        if (engine.isGameOver()) return;
 
-        Position targetObstacle = findAdjacentObstacle();
+        Position targetObstacle = engine.findAdjacentObstacle();
 
         if (targetObstacle != null) {
-            if (player.getHp() <= 15) {
+            if (engine.getPlayer().getHp() <= 15) {
                 view.logMessage("[ATTENZIONE] Non hai abbastanza salute per sopportare il calore del sacrificio!");
                 return;
             }
 
-            player.takeDamage(15);
-            map.setCellType(targetObstacle, CellType.EMPTY);
+            engine.getPlayer().takeDamage(15);
+            engine.getMap().setCellType(targetObstacle, CellType.EMPTY);
             view.logMessage("[MAGIA] Bruci la tua energia vitale per sciogliere il blocco di ghiaccio! (-15 HP)");
 
-            // ❄ Attiva il tremolio dello schermo per l'impatto della magia!
             view.triggerScreenShake();
-
             checkGameOver();
             updateView();
         } else {
@@ -211,9 +160,9 @@ public class GameController {
     }
 
     private void checkGameOver() {
-        if (player.isDead()) {
+        if (engine.isGameOver()) {
             view.logMessage("[GAME OVER] L'eroe è caduto tra i ghiacci di Niflheim...");
-            ScoreManager.addAttempt(player.getName(), player.getRunesCollected(), "Sconfitto");
+            ScoreManager.addAttempt(engine.getPlayer().getName(), engine.getPlayer().getRunesCollected(), "Sconfitto");
 
             view.showGameOverOverlay(
                     () -> view.logMessage("[SISTEMA] Riavvio non ancora implementato."),
@@ -223,8 +172,8 @@ public class GameController {
     }
 
     private void handleVictory() {
-        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        ScoreManager.addVictory(player.getName(), elapsedSeconds);
+        long elapsedSeconds = engine.getElapsedSeconds();
+        ScoreManager.addVictory(engine.getPlayer().getName(), elapsedSeconds);
         view.logMessage("[VITTORIA] Hai recuperato tutte e 5 le rune di Niflheim!");
 
         view.showVictoryOverlay(
@@ -235,16 +184,16 @@ public class GameController {
     }
 
     private void updateView() {
-        Position adjacentObstacle = findAdjacentObstacle();
+        Position adjacentObstacle = engine.findAdjacentObstacle();
         view.setHighlightedIcePos(adjacentObstacle);
 
-        view.renderMap(map, player.getPosition());
+        view.renderMap(engine.getMap(), engine.getPlayer().getPosition());
         view.updateStats(
-                player.getHp(),
-                player.getMaxHp(),
-                player.getFrostResistance(),
-                player.getMaxFrost(),
-                player.getRunesCollected()
+                engine.getPlayer().getHp(),
+                engine.getPlayer().getMaxHp(),
+                engine.getPlayer().getFrostResistance(),
+                engine.getPlayer().getMaxFrost(),
+                engine.getPlayer().getRunesCollected()
         );
     }
 
