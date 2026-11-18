@@ -1,6 +1,7 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow;
 
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.controller.GameController;
+import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.MainMenuView;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -18,15 +19,23 @@ public class Main extends Application {
         showMainMenu();
     }
 
-    // 1. Mostra il Menu Principale
+    // 1. Mostra il Menu Principale disaccoppiato tramite Supplier (Principio SOLID - DIP)
     private void showMainMenu() {
-        MainMenuView menuView = new MainMenuView();
+        MainMenuView menuView = new MainMenuView(
+                () -> ScoreManager.getVictories().stream()
+                        .map(v -> new MainMenuView.VictoryRecord(v.getHeroName(), v.getFormattedTime()))
+                        .toList(),
+                () -> ScoreManager.getAttempts().stream()
+                        .map(a -> new MainMenuView.AttemptRecord(a.getHeroName(), a.getRunesCollected(), a.getStatus()))
+                        .toList()
+        );
+
         Scene menuScene = new Scene(menuView.getRoot(), 900, 700);
 
         menuView.getStartButton().setOnAction(e -> {
             String heroName = menuView.getNameInput().getText();
 
-            // Validazione del nome vuoto sfruttando i metodi dedicati della View
+            // Validazione del nome vuoto tramite i metodi della View
             if (heroName == null || heroName.trim().isEmpty()) {
                 menuView.showNameError("DEVI INSERIRE PER FORZA UN NOME!");
             } else {

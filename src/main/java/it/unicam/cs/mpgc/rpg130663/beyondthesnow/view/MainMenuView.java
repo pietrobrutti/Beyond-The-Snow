@@ -1,6 +1,5 @@
 package it.unicam.cs.mpgc.rpg130663.beyondthesnow.view;
 
-import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.ScoreManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -14,6 +13,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 public class MainMenuView {
     private final StackPane root;
@@ -22,11 +22,20 @@ public class MainMenuView {
     private final Button rulesButton;
     private final Button leaderboardButton;
     private final Button exitButton;
-
-    // Etichetta di errore con spazio sempre riservato (evita qualsiasi shift grafico)
     private final Label errorLabel;
 
-    public MainMenuView() {
+    // Supplier per disaccoppiare la vista dal modello concreto (ScoreManager) - Rispetta DIP e SRP
+    private final Supplier<List<VictoryRecord>> victoriesSupplier;
+    private final Supplier<List<AttemptRecord>> attemptsSupplier;
+
+    // Interfacce dati leggere per la visualizzazione (DTP - Data Transfer / Record locali)
+    public record VictoryRecord(String heroName, String formattedTime) {}
+    public record AttemptRecord(String heroName, int runesCollected, String status) {}
+
+    public MainMenuView(Supplier<List<VictoryRecord>> victoriesSupplier, Supplier<List<AttemptRecord>> attemptsSupplier) {
+        this.victoriesSupplier = victoriesSupplier;
+        this.attemptsSupplier = attemptsSupplier;
+
         this.root = new StackPane();
         this.nameInput = new TextField();
         this.startButton = new Button();
@@ -45,7 +54,6 @@ public class MainMenuView {
         try {
             String imagePath = getClass().getResource("/images/menu_background.png").toExternalForm();
             Image backgroundImage = new Image(imagePath);
-
             backgroundView.setImage(backgroundImage);
             backgroundView.setPreserveRatio(true);
             backgroundView.setSmooth(true);
@@ -68,11 +76,9 @@ public class MainMenuView {
         menuBox.setMaxWidth(400);
         menuBox.setTranslateY(-5);
 
-        // Etichetta del nome
         Label inputLabel = new Label("NOME DELL'EROE");
         inputLabel.setStyle("-fx-text-fill: #81D4FA; -fx-font-weight: bold; -fx-font-size: 11px; -fx-font-family: 'Arial';");
 
-        // Configurazione dell'errore: gestito nel layout ma invisibile all'avvio
         errorLabel.setText("");
         errorLabel.setOpacity(0.0);
         errorLabel.setMinWidth(280);
@@ -106,12 +112,10 @@ public class MainMenuView {
                         "-fx-border-width: 1.5px;"
         );
 
-        // Contenitore centrale del blocco nome ed errore
         VBox inputContainer = new VBox(5, inputLabel, errorLabel, nameInput);
         inputContainer.setAlignment(Pos.CENTER);
         inputContainer.setMaxWidth(300);
 
-        // Stile dei pulsanti principali
         String baseButtonStyle =
                 "-fx-background-color: rgba(2, 136, 209, 0.75); " +
                         "-fx-text-fill: #E1F5FE; " +
@@ -205,7 +209,6 @@ public class MainMenuView {
         });
     }
 
-    // Finestra della Guida (Le Cronache di Niflheim)
     private void showGuideDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 12, 22, 0.85);");
@@ -268,7 +271,6 @@ public class MainMenuView {
         return box;
     }
 
-    // Finestra Archivio di Niflheim (Vittorie e Caduti)
     private void showArchiveDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
@@ -293,20 +295,20 @@ public class MainMenuView {
         HBox columnsContainer = new HBox(20);
         columnsContainer.setAlignment(Pos.CENTER);
 
-        // 1. Sezione Vittorie
+        // 1. Sezione Vittorie tramite Supplier (Inversione di Dipendenza)
         VBox victoriesList = new VBox(8);
         victoriesList.setPadding(new Insets(5));
-        List<ScoreManager.VictoryEntry> topVictories = ScoreManager.getVictories();
+        List<VictoryRecord> topVictories = victoriesSupplier.get();
         if (topVictories.isEmpty()) {
             Label emptyLbl = new Label("Nessun eroe ha completato l'impresa.");
             emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px;");
             victoriesList.getChildren().add(emptyLbl);
         } else {
             int rank = 1;
-            for (ScoreManager.VictoryEntry entry : topVictories) {
+            for (VictoryRecord entry : topVictories) {
                 VBox card = createRecordCard(
-                        rank + ". " + entry.getHeroName(),
-                        "Tempo impiegato: " + entry.getFormattedTime(),
+                        rank + ". " + entry.heroName(),
+                        "Tempo impiegato: " + entry.formattedTime(),
                         "#C8E6C9"
                 );
                 victoriesList.getChildren().add(card);
@@ -315,25 +317,24 @@ public class MainMenuView {
         }
         ScrollPane victoriesScroll = createCardScrollContainer(victoriesList, "SALA DEGLI EROI (Vittorie)");
 
-        // Linea divisoria verticale
         VBox divider = new VBox();
         divider.setMinWidth(2);
         divider.setPrefHeight(320);
         divider.setStyle("-fx-background-color: rgba(129, 212, 250, 0.3);");
 
-        // 2. Sezione Tentativi (Caduti)
+        // 2. Sezione Tentativi tramite Supplier
         VBox attemptsList = new VBox(8);
         attemptsList.setPadding(new Insets(5));
-        List<ScoreManager.AttemptEntry> recentAttempts = ScoreManager.getAttempts();
+        List<AttemptRecord> recentAttempts = attemptsSupplier.get();
         if (recentAttempts.isEmpty()) {
             Label emptyLbl = new Label("Nessun tentativo registrato.");
             emptyLbl.setStyle("-fx-text-fill: #90CAF9; -fx-font-size: 11px; -fx-padding: 10px;");
             attemptsList.getChildren().add(emptyLbl);
         } else {
-            for (ScoreManager.AttemptEntry entry : recentAttempts) {
+            for (AttemptRecord entry : recentAttempts) {
                 VBox card = createRecordCard(
-                        entry.getHeroName() + "  —  Rune: " + entry.getRunesCollected() + "/5 💎",
-                        "Esito: " + entry.getStatus(),
+                        entry.heroName() + "  —  Rune: " + entry.runesCollected() + "/5 💎",
+                        "Esito: " + entry.status(),
                         "#FFCCBC"
                 );
                 attemptsList.getChildren().add(card);
@@ -396,11 +397,7 @@ public class MainMenuView {
         scroll.setPrefHeight(270);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle(
-                "-fx-background: transparent; " +
-                        "-fx-background-color: transparent; " +
-                        "-fx-border-color: transparent;"
-        );
+        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
         content.setStyle("-fx-background-color: transparent;");
 
         outerWrapper.getChildren().addAll(title, scroll);
