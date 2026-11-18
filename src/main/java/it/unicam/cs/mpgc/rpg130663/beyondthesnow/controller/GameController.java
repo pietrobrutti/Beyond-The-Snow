@@ -57,6 +57,7 @@ public class GameController {
                 CellType cellType = engine.getMap().getCellType(targetPos);
 
                 if (cellType != CellType.OBSTACLE) {
+                    // 1. Spostiamo subito il player nella nuova posizione e riduciamo il gelo
                     engine.getPlayer().setPosition(targetPos);
                     engine.getPlayer().reduceFrostResistance(2);
 
@@ -68,14 +69,17 @@ public class GameController {
                         return;
                     }
 
+                    // 2. Valutiamo immediatamente la cella in cui è entrato
                     switch (cellType) {
                         case RUNE -> {
                             engine.getPlayer().collectRune();
                             engine.getMap().setCellType(targetPos, CellType.EMPTY);
                             view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + engine.getPlayer().getRunesCollected() + " / 5)");
 
+                            // Se è la vittoria, gestiamo la vittoria ed usciamo subito per evitare sovrapposizioni
                             if (engine.isVictory()) {
                                 handleVictory();
+                                return;
                             }
                         }
                         case ENEMY -> {
@@ -138,7 +142,6 @@ public class GameController {
             }
         });
 
-        // Assicura il focus immediato all'avvio dei controlli
         view.getRoot().requestFocus();
     }
 
@@ -232,11 +235,11 @@ public class GameController {
                 if (onReturnToMenu != null) {
                     newController.setOnReturnToMenu(onReturnToMenu);
                 }
-                // Forza il focus sulla nuova root per riabilitare immediatamente i comandi da tastiera
                 scene.getRoot().requestFocus();
             }
         };
 
+        // CORRETTO: Collega correttamente il ritorno al menu principale nella schermata di vittoria
         Runnable menuAction = () -> {
             if (onReturnToMenu != null) {
                 onReturnToMenu.run();

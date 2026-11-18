@@ -55,6 +55,10 @@ public class Main extends Application {
     // 2. Avvia la schermata di gioco delegando la logica al GameController
     private void showGameScene(String heroName) {
         GameController gameController = new GameController(heroName);
+
+        // FONDAMENTALE: Collega l'azione di ritorno al menu principale!
+        gameController.setOnReturnToMenu(this::showMainMenu);
+
         Scene gameScene = new Scene(gameController.getView().getRoot(), 950, 700);
 
         primaryStage.setScene(gameScene);
