@@ -2,12 +2,10 @@ package it.unicam.cs.mpgc.rpg130663.beyondthesnow;
 
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.controller.GameController;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.MainMenuView;
-import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 public class Main extends Application {
 
@@ -28,39 +26,11 @@ public class Main extends Application {
         menuView.getStartButton().setOnAction(e -> {
             String heroName = menuView.getNameInput().getText();
 
-            // Controllo obbligatorietà del nome con animazione di vibrazione e alert sul campo
+            // Validazione del nome vuoto sfruttando i metodi dedicati della View
             if (heroName == null || heroName.trim().isEmpty()) {
-                // Effetto vibrazione (Shake) sul campo di testo
-                TranslateTransition shake = new TranslateTransition(Duration.millis(50), menuView.getNameInput());
-                shake.setByX(10f);
-                shake.setCycleCount(6);
-                shake.setAutoReverse(true);
-                shake.play();
-
-                // Salva lo stile originale e applica lo stile di errore (rosso)
-                String originalStyle = menuView.getNameInput().getStyle();
-                menuView.getNameInput().setStyle(
-                        "-fx-background-color: rgba(40, 10, 15, 0.9); " +
-                                "-fx-text-fill: #FF8A80; " +
-                                "-fx-prompt-text-fill: #FF5252; " +
-                                "-fx-font-weight: bold; " +
-                                "-fx-alignment: center; " +
-                                "-fx-padding: 7px; " +
-                                "-fx-background-radius: 6px; " +
-                                "-fx-border-color: #FF5252; " +
-                                "-fx-border-radius: 6px; " +
-                                "-fx-border-width: 2px;"
-                );
-                menuView.getNameInput().setPromptText("DEVI INSERIRE PER FORZA UN NOME!");
-
-                // Ripristina lo stile normale appena l'utente comincia a scrivere
-                menuView.getNameInput().setOnKeyTyped(eventKey -> {
-                    menuView.getNameInput().setStyle(originalStyle);
-                    menuView.getNameInput().setPromptText("Inserisci il tuo nome...");
-                    menuView.getNameInput().setOnKeyTyped(null);
-                });
-
+                menuView.showNameError("DEVI INSERIRE PER FORZA UN NOME!");
             } else {
+                menuView.hideNameError();
                 showGameScene(heroName.trim());
             }
         });
@@ -75,7 +45,6 @@ public class Main extends Application {
 
     // 2. Avvia la schermata di gioco delegando la logica al GameController
     private void showGameScene(String heroName) {
-        // Inizializziamo il controller che gestisce la vista, la mappa e le statistiche dell'eroe
         GameController gameController = new GameController(heroName);
         Scene gameScene = new Scene(gameController.getView().getRoot(), 950, 700);
 

@@ -23,7 +23,7 @@ public class MainMenuView {
     private final Button leaderboardButton;
     private final Button exitButton;
 
-    // Etichetta di errore con spazio sempre riservato (mai più shift)
+    // Etichetta di errore con spazio sempre riservato (evita qualsiasi shift grafico)
     private final Label errorLabel;
 
     public MainMenuView() {
@@ -72,9 +72,9 @@ public class MainMenuView {
         Label inputLabel = new Label("NOME DELL'EROE");
         inputLabel.setStyle("-fx-text-fill: #81D4FA; -fx-font-weight: bold; -fx-font-size: 11px; -fx-font-family: 'Arial';");
 
-        // Configurazione dell'errore: sempre gestito nel layout ma invisibile all'avvio
+        // Configurazione dell'errore: gestito nel layout ma invisibile all'avvio
         errorLabel.setText("");
-        errorLabel.setOpacity(0.0); // Invisibile ma occupa lo spazio esatto, impedendo qualsiasi shift
+        errorLabel.setOpacity(0.0);
         errorLabel.setMinWidth(280);
         errorLabel.setMaxWidth(280);
         errorLabel.setAlignment(Pos.CENTER);
@@ -177,12 +177,12 @@ public class MainMenuView {
 
     public void showNameError(String message) {
         errorLabel.setText(message);
-        errorLabel.setOpacity(1.0); // Rende visibile il box rosso senza alterare il layout
+        errorLabel.setOpacity(1.0);
     }
 
     public void hideNameError() {
         errorLabel.setText("");
-        errorLabel.setOpacity(0.0); // Rende trasparente il box liberando visivamente lo spazio
+        errorLabel.setOpacity(0.0);
     }
 
     private void setupButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
@@ -205,7 +205,7 @@ public class MainMenuView {
         });
     }
 
-    // Finestra della Guida aggiornata con le Cronache di Niflheim e le nuove meccaniche
+    // Finestra della Guida (Le Cronache di Niflheim)
     private void showGuideDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 12, 22, 0.85);");
@@ -268,7 +268,7 @@ public class MainMenuView {
         return box;
     }
 
-    // Finestra Archivio di Niflheim (Riorganizzata a schede a blocco pulite e centrate)
+    // Finestra Archivio di Niflheim (Vittorie e Caduti)
     private void showArchiveDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
@@ -290,7 +290,6 @@ public class MainMenuView {
         Label titleLabel = new Label("🏆 ARCHIVIO DI NIFLHEIM 🏆");
         titleLabel.setStyle("-fx-text-fill: #E1F5FE; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Arial';");
 
-        // --- CONTENITORE ORIZZONTALE PER LE DUE SEZIONI ---
         HBox columnsContainer = new HBox(20);
         columnsContainer.setAlignment(Pos.CENTER);
 
@@ -316,7 +315,7 @@ public class MainMenuView {
         }
         ScrollPane victoriesScroll = createCardScrollContainer(victoriesList, "SALA DEGLI EROI (Vittorie)");
 
-        // --- LINEA DIVISORIA VERTICALE ---
+        // Linea divisoria verticale
         VBox divider = new VBox();
         divider.setMinWidth(2);
         divider.setPrefHeight(320);
