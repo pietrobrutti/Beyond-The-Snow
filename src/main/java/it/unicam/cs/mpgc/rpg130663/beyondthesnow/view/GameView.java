@@ -19,6 +19,10 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+/**
+ * Gestisce l'interfaccia grafica principale della schermata di gioco di Niflheim,
+ * occupandosi del rendering dinamico della griglia, delle statistiche del player e dei log di sessione.
+ */
 public class GameView {
     private final StackPane root;
     private final BorderPane mainLayout;
@@ -34,7 +38,7 @@ public class GameView {
     private final Button campButton;
     private final Button meltButton;
 
-    // Cache delle immagini pubbliche o accessibili per le altre viste
+    // Cache delle immagini condivise per ottimizzare il caricamento e accessibili anche ad altre viste
     public static final Image HERO_IMAGE = loadCachedImage("/images/hero.png", 300, 300);
     private static final Image RUNE_IMAGE = loadCachedImage("/images/rune.png", 38, 38);
     private static final Image OBSTACLE_IMAGE = loadCachedImage("/images/obstacle.png", 38, 38);
@@ -59,6 +63,9 @@ public class GameView {
         this.root.getChildren().add(mainLayout);
     }
 
+    /**
+     * Metodo di utilità per il caricamento sicuro e la memorizzazione in cache delle immagini delle risorse.
+     */
     private static Image loadCachedImage(String path, double width, double height) {
         try {
             var resource = GameView.class.getResource(path);
@@ -66,11 +73,14 @@ public class GameView {
                 return new Image(resource.toExternalForm(), width, height, true, false);
             }
         } catch (Exception e) {
-            // Ignora se non trovato
+            // Ignora silenziosamente se la risorsa non viene trovata
         }
         return null;
     }
 
+    /**
+     * Inizializza i componenti grafici, i pannelli laterali, la griglia di gioco e i fogli di stile CSS.
+     */
     private void initUI() {
         try {
             String imagePath = getClass().getResource("/images/WelcomePhoto.png").toExternalForm();
@@ -170,6 +180,9 @@ public class GameView {
         this.highlightedIcePos = pos;
     }
 
+    /**
+     * Esegue un'animazione di scossa sullo schermo (screen shake) in caso di pericolo o danni subiti.
+     */
     public void triggerScreenShake() {
         TranslateTransition tt = new TranslateTransition(Duration.millis(50), root);
         tt.setFromX(0);
@@ -179,6 +192,9 @@ public class GameView {
         tt.play();
     }
 
+    /**
+     * Esegue il rendering completo della griglia di gioco in base allo stato del modello e alla posizione dell'eroe.
+     */
     public void renderMap(GridMap map, Position heroPos) {
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int y = 0; y < GRID_SIZE; y++) {
@@ -226,6 +242,9 @@ public class GameView {
         }
     }
 
+    /**
+     * Restituisce il nodo grafico associato (immagine in cache o emoji di fallback testuale).
+     */
     private Node getNode(Image cachedImage, String fallbackEmoji, String textColor, int size, boolean isSmooth) {
         if (cachedImage != null) {
             ImageView imageView = new ImageView(cachedImage);
@@ -240,12 +259,18 @@ public class GameView {
         return fallbackLabel;
     }
 
+    /**
+     * Aggiorna le barre di progresso delle statistiche vitali e il contatore delle rune.
+     */
     public void updateStats(int hp, int maxHp, int cold, int maxCold, int runes) {
         hpBar.setProgress((double) hp / maxHp);
         coldBar.setProgress((double) cold / maxCold);
         runesLabel.setText("🔮 Rune raccolte: " + runes + " / 5");
     }
 
+    /**
+     * Aggiunge un messaggio formattato alla console di log testuale in basso.
+     */
     public void logMessage(String message) {
         logArea.appendText("\n" + message);
         logArea.setScrollTop(Double.MAX_VALUE);

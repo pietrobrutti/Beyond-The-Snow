@@ -8,6 +8,10 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+/**
+ * Classe di avvio principale dell'applicazione (Application entry point di JavaFX).
+ * Gestisce il ciclo di vita dello stage primario e la transizione tra le scene (Menu e Partita).
+ */
 public class Main extends Application {
 
     private Stage primaryStage;
@@ -19,7 +23,10 @@ public class Main extends Application {
         showMainMenu();
     }
 
-    // 1. Mostra il Menu Principale disaccoppiato tramite Supplier (Principio SOLID - DIP)
+    /**
+     * 1. Mostra il Menu Principale disaccoppiato dal modello tramite Supplier (Principio SOLID - DIP).
+     * Converte i dati grezzi dello ScoreManager nei record leggeri attesi dalla vista.
+     */
     private void showMainMenu() {
         MainMenuView menuView = new MainMenuView(
                 () -> ScoreManager.getVictories().stream()
@@ -35,7 +42,7 @@ public class Main extends Application {
         menuView.getStartButton().setOnAction(e -> {
             String heroName = menuView.getNameInput().getText();
 
-            // Validazione del nome vuoto tramite i metodi della View
+            // Validazione del nome vuoto gestita direttamente tramite i metodi della View
             if (heroName == null || heroName.trim().isEmpty()) {
                 menuView.showNameError("DEVI INSERIRE PER FORZA UN NOME!");
             } else {
@@ -52,11 +59,13 @@ public class Main extends Application {
         primaryStage.show();
     }
 
-    // 2. Avvia la schermata di gioco delegando la logica al GameController
+    /**
+     * 2. Avvia la schermata di gioco istanziando il GameController e associandovi i callback di navigazione.
+     */
     private void showGameScene(String heroName) {
         GameController gameController = new GameController(heroName);
 
-        // FONDAMENTALE: Collega l'azione di ritorno al menu principale!
+        // FONDAMENTALE: Collega l'azione di ritorno al menu principale tramite riferimento a metodo (DIP)
         gameController.setOnReturnToMenu(this::showMainMenu);
 
         Scene gameScene = new Scene(gameController.getView().getRoot(), 950, 700);
@@ -64,10 +73,10 @@ public class Main extends Application {
         primaryStage.setScene(gameScene);
         primaryStage.centerOnScreen();
 
-        // Inizializziamo i controlli da tastiera e i pulsanti tramite il controller
+        // Inizializza i controlli da tastiera e i listener dei pulsanti tramite il controller
         gameController.initControls(gameScene);
 
-        // Richiedi il focus per permettere l'ascolto dei tasti direzionali
+        // Richiede il focus asincrono per permettere l'ascolto immediato dei tasti direzionali
         Platform.runLater(() -> gameController.getView().getRoot().requestFocus());
         gameController.getView().getRoot().setOnMouseClicked(e -> gameController.getView().getRoot().requestFocus());
     }

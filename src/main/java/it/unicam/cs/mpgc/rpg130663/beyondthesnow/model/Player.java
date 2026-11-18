@@ -2,6 +2,10 @@ package it.unicam.cs.mpgc.rpg130663.beyondthesnow.model;
 
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid.Position;
 
+/**
+ * Modella il personaggio del giocatore (Eroe), gestendone la posizione corrente,
+ * i punti vita (HP), la resistenza al freddo/gelo e il conteggio delle rune raccolte.
+ */
 public class Player {
     private final String name;
     private Position position;
@@ -51,10 +55,16 @@ public class Player {
         return maxHp;
     }
 
+    /**
+     * Riduce i punti vita del player in seguito a danni subiti, vincolandoli a un minimo di 0.
+     */
     public void takeDamage(int amount) {
         this.hp = Math.max(0, this.hp - amount);
     }
 
+    /**
+     * Ripristina i punti vita del player senza superare il limite massimo (maxHp).
+     */
     public void healHp(int amount) {
         this.hp = Math.min(maxHp, this.hp + amount);
     }
@@ -67,14 +77,20 @@ public class Player {
         return maxFrost;
     }
 
+    /**
+     * Riduce la resistenza al gelo a causa delle condizioni climatiche o degli attacchi subiti.
+     * Se la resistenza si azzera completamente, il freddo estremo infligge danni diretti alla salute.
+     */
     public void reduceFrostResistance(int amount) {
         this.frostResistance = Math.max(0, this.frostResistance - amount);
-        // Se la resistenza al gelo si azzera, l'assolo del freddo infligge danni diretti alla salute
         if (this.frostResistance == 0) {
-            takeDamage(5);
+            takeDamage(5); // Danno da ipotermia critica
         }
     }
 
+    /**
+     * Ripristina la resistenza al gelo senza superare il valore massimo consentito.
+     */
     public void restoreFrostResistance(int amount) {
         this.frostResistance = Math.min(maxFrost, this.frostResistance + amount);
     }
@@ -83,6 +99,9 @@ public class Player {
         return runesCollected;
     }
 
+    /**
+     * Incrementa il contatore delle rune magiche raccolte.
+     */
     public void collectRune() {
         this.runesCollected++;
     }

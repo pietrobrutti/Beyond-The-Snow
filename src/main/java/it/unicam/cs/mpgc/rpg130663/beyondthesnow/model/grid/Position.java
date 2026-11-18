@@ -2,6 +2,10 @@ package it.unicam.cs.mpgc.rpg130663.beyondthesnow.model.grid;
 
 import java.util.Objects;
 
+/**
+ * Rappresenta una coordinata bidimensionale (x, y) immutabile all'interno della griglia di gioco.
+ * Implementa correttamente equals e hashCode per consentire l'utilizzo come chiave nelle collezioni (HashMap).
+ */
 public class Position {
     private final int x;
     private final int y;

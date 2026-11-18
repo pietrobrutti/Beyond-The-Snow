@@ -15,6 +15,10 @@ import javafx.scene.layout.VBox;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Gestisce la vista del Menu Principale del gioco, consentendo l'inserimento del nome dell'eroe,
+ * l'avvio della partita, la visualizzazione della guida e l'accesso all'archivio/classifica.
+ */
 public class MainMenuView {
     private final StackPane root;
     private final TextField nameInput;
@@ -24,11 +28,11 @@ public class MainMenuView {
     private final Button exitButton;
     private final Label errorLabel;
 
-    // Supplier per disaccoppiare la vista dal modello concreto (ScoreManager) - Rispetta DIP e SRP
+    // Supplier per disaccoppiare la vista dal modello concreto ScoreManager (Rispetta DIP e SRP)
     private final Supplier<List<VictoryRecord>> victoriesSupplier;
     private final Supplier<List<AttemptRecord>> attemptsSupplier;
 
-    // Interfacce dati leggere per la visualizzazione (DTP - Data Transfer / Record locali)
+    // Interfacce dati leggere (record locali) per il trasferimento e la visualizzazione pulita delle statistiche
     public record VictoryRecord(String heroName, String formattedTime) {}
     public record AttemptRecord(String heroName, int runesCollected, String status) {}
 
@@ -48,6 +52,10 @@ public class MainMenuView {
         initActions();
     }
 
+    /**
+     * Inizializza l'interfaccia grafica, caricando gli sfondi, i campi di input, i bottoni di navigazione
+     * e impostando i fogli di stile CSS inline.
+     */
     private void initUI() {
         // --- 1. Sfondo del Menu Principale ---
         ImageView backgroundView = new ImageView();
@@ -142,7 +150,7 @@ public class MainMenuView {
         VBox buttonsBox = new VBox(8, startButton, exitButton);
         buttonsBox.setAlignment(Pos.CENTER);
 
-        // --- 3. Pulsanti Icona in basso ---
+        // --- 3. Pulsanti Icona in basso (Guida e Leaderboard) ---
         String iconButtonStyle =
                 "-fx-background-color: rgba(2, 136, 209, 0.8); " +
                         "-fx-text-fill: #E1F5FE; " +
@@ -189,6 +197,9 @@ public class MainMenuView {
         errorLabel.setOpacity(0.0);
     }
 
+    /**
+     * Configura stile ed effetti di hover per i pulsanti principali.
+     */
     private void setupButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
         button.setText(text);
         button.setMinWidth(width);
@@ -198,6 +209,9 @@ public class MainMenuView {
         button.setOnMouseExited(e -> button.setStyle(baseStyle));
     }
 
+    /**
+     * Collega gli eventi di interazione ai pulsanti secondari e ai listener di input.
+     */
     private void initActions() {
         rulesButton.setOnAction(e -> showGuideDialog());
         leaderboardButton.setOnAction(e -> showArchiveDialog());
@@ -209,6 +223,9 @@ public class MainMenuView {
         });
     }
 
+    /**
+     * Mostra la finestra di dialogo modale contenente il lore e le regole di gioco.
+     */
     private void showGuideDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 12, 22, 0.85);");
@@ -255,6 +272,9 @@ public class MainMenuView {
         root.getChildren().add(overlay);
     }
 
+    /**
+     * Metodo di supporto per formattare una singola regola all'interno della guida.
+     */
     private HBox createRuleItem(String title, String description) {
         HBox box = new HBox(6);
         box.setAlignment(Pos.TOP_LEFT);
@@ -271,6 +291,9 @@ public class MainMenuView {
         return box;
     }
 
+    /**
+     * Mostra la finestra di dialogo modale dell'archivio/classifica, popolandola tramite i supplier.
+     */
     private void showArchiveDialog() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(5, 15, 30, 0.85);");
@@ -295,7 +318,7 @@ public class MainMenuView {
         HBox columnsContainer = new HBox(20);
         columnsContainer.setAlignment(Pos.CENTER);
 
-        // 1. Sezione Vittorie tramite Supplier (Inversione di Dipendenza)
+        // 1. Sezione Vittorie tramite Supplier (Inversione di Dipendenza - DIP)
         VBox victoriesList = new VBox(8);
         victoriesList.setPadding(new Insets(5));
         List<VictoryRecord> topVictories = victoriesSupplier.get();
@@ -354,6 +377,9 @@ public class MainMenuView {
         root.getChildren().add(overlay);
     }
 
+    /**
+     * Crea una singola card visiva per una voce della classifica o dello storico.
+     */
     private VBox createRecordCard(String mainText, String subText, String accentColor) {
         VBox card = new VBox(4);
         card.setPadding(new Insets(8, 12, 8, 12));
@@ -378,6 +404,9 @@ public class MainMenuView {
         return card;
     }
 
+    /**
+     * Incapsula una lista di card all'interno di un contenitore con scorrimento (ScrollPane).
+     */
     private ScrollPane createCardScrollContainer(VBox content, String sectionTitle) {
         VBox outerWrapper = new VBox(8);
         outerWrapper.setPadding(new Insets(10));
@@ -411,6 +440,9 @@ public class MainMenuView {
         return finalScroll;
     }
 
+    /**
+     * Metodo di utilità per creare pulsanti con stile uniforme all'interno delle modali.
+     */
     private Button createStyledButton(String text, double width) {
         Button btn = new Button(text);
         btn.setMinWidth(width);

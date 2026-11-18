@@ -10,18 +10,23 @@ import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.GameView;
 import it.unicam.cs.mpgc.rpg130663.beyondthesnow.view.VictoryView;
 import javafx.scene.Scene;
 
+/**
+ * Controller principale del gioco. Gestisce la coordinazione tra il modello di business (GameEngine)
+ * e la rappresentazione grafica (GameView), intercettando gli input utente e gestendo i flussi di stato.
+ */
 public class GameController {
     private final GameEngine engine;
     private final GameView view;
     private Scene scene;
     private final String heroName;
-    private Runnable onReturnToMenu;
+    private Runnable onReturnToMenu; // Callback per il ritorno al menu principale (DIP)
 
     public GameController(String heroName) {
         this.heroName = heroName;
         this.engine = new GameEngine(heroName, 10, 10);
         this.view = new GameView(heroName);
 
+        // Inizializzazione della vista di gioco e dei messaggi di benvenuto a schermo
         updateView();
         this.view.logMessage("[SISTEMA] L'eroe " + heroName + " è entrato nelle terre ghiacciate di Niflheim.");
         this.view.logMessage("[SISTEMA] Hai a disposizione ⛺ 3 Accampamenti di emergenza per tutta la partita.");
@@ -31,6 +36,9 @@ public class GameController {
         this.onReturnToMenu = onReturnToMenu;
     }
 
+    /**
+     * Configura i listener per i comandi da tastiera e i pulsanti dell'interfaccia di gioco.
+     */
     public void initControls(Scene scene) {
         this.scene = scene;
         view.getCampButton().setOnAction(e -> handleRest());
@@ -43,6 +51,7 @@ public class GameController {
             int newX = currentPos.getX();
             int newY = currentPos.getY();
 
+            // Mappatura dei tasti direzionali e WASD
             switch (event.getCode()) {
                 case UP, W -> newY--;
                 case DOWN, S -> newY++;
@@ -53,14 +62,17 @@ public class GameController {
 
             Position targetPos = new Position(newX, newY);
 
+            // Verifico che la mossa rientri nei confini della griglia
             if (engine.getMap().isValidPosition(targetPos)) {
                 CellType cellType = engine.getMap().getCellType(targetPos);
 
+                // I blocchi di ghiaccio solido (OBSTACLE) bloccano il movimento diretto
                 if (cellType != CellType.OBSTACLE) {
-                    // 1. Spostiamo subito il player nella nuova posizione e riduciamo il gelo
+                    // 1. Sposto subito il player e consumo resistenza al gelo per il passo
                     engine.getPlayer().setPosition(targetPos);
                     engine.getPlayer().reduceFrostResistance(2);
 
+                    // Controllo di sopravvivenza: ritirata d'emergenza se il freddo è estremo
                     if (engine.getPlayer().getFrostResistance() < 20) {
                         view.logMessage("[PERICOLO] Il gelo è troppo intenso! Sei costretto a una ritirata d'emergenza!");
                         engine.getPlayer().restoreFrostResistance(15);
@@ -69,14 +81,14 @@ public class GameController {
                         return;
                     }
 
-                    // 2. Valutiamo immediatamente la cella in cui è entrato
+                    // 2. Valuto istantaneamente il tipo di cella calpestata
                     switch (cellType) {
                         case RUNE -> {
                             engine.getPlayer().collectRune();
                             engine.getMap().setCellType(targetPos, CellType.EMPTY);
                             view.logMessage("[RUNA] Hai raccolto una Runa Magica! (" + engine.getPlayer().getRunesCollected() + " / 5)");
 
-                            // Se è la vittoria, gestiamo la vittoria ed usciamo subito per evitare sovrapposizioni
+                            // Se questa era l'ultima runa, scatta la vittoria immediata
                             if (engine.isVictory()) {
                                 handleVictory();
                                 return;
@@ -89,6 +101,7 @@ public class GameController {
 
                             final BattleView[] battleViewRef = new BattleView[1];
 
+                            // Istanzio il sotto-sistema di combattimento a turni
                             battleViewRef[0] = new BattleView(
                                     engine.getPlayer().getName(),
                                     engine.getPlayer().getHp(),
@@ -145,6 +158,9 @@ public class GameController {
         view.getRoot().requestFocus();
     }
 
+    /**
+     * Gestisce l'azione di riposo presso un accampamento di emergenza.
+     */
     private void handleRest() {
         if (engine.isGameOver()) return;
 
@@ -169,6 +185,9 @@ public class GameController {
         updateView();
     }
 
+    /**
+     * Gestisce l'abilità magica per sciogliere un blocco di ghiaccio adiacente sacrificando HP.
+     */
     private void handleMeltIce() {
         if (engine.isGameOver()) return;
 
@@ -192,6 +211,9 @@ public class GameController {
         }
     }
 
+    /**
+     * Controlla se le condizioni di sconfitta sono soddisfatte e mostra la schermata GameOver.
+     */
     private void checkGameOver() {
         if (engine.isGameOver()) {
             ScoreManager.addAttempt(engine.getPlayer().getName(), engine.getPlayer().getRunesCollected(), "Sconfitto");
@@ -222,6 +244,9 @@ public class GameController {
         }
     }
 
+    /**
+     * Gestisce il completamento vittorioso della partita, registrando il punteggio e mostrando VictoryView.
+     */
     private void handleVictory() {
         long elapsedSeconds = engine.getElapsedSeconds();
         ScoreManager.addVictory(engine.getPlayer().getName(), elapsedSeconds);
@@ -239,7 +264,7 @@ public class GameController {
             }
         };
 
-        // CORRETTO: Collega correttamente il ritorno al menu principale nella schermata di vittoria
+        // Collega l'azione del menu principale sfruttando il callback delegato dal Main
         Runnable menuAction = () -> {
             if (onReturnToMenu != null) {
                 onReturnToMenu.run();
@@ -253,6 +278,9 @@ public class GameController {
         }
     }
 
+    /**
+     * Sincronizza lo stato logico del motore con la rappresentazione grafica della vista.
+     */
     private void updateView() {
         Position adjacentObstacle = engine.findAdjacentObstacle();
         view.setHighlightedIcePos(adjacentObstacle);

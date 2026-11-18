@@ -7,6 +7,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+/**
+ * Gestisce la vista della schermata di Vittoria, configurando l'interfaccia grafica,
+ * il caricamento dello sfondo celebrativo e l'associazione dei comandi di riavvio o ritorno al menu.
+ */
 public class VictoryView {
     private final StackPane root;
     private final Button restartButton;
@@ -17,6 +21,7 @@ public class VictoryView {
         this.restartButton = new Button();
         this.menuButton = new Button();
 
+        // Collega le azioni di navigazione/riavvio ai rispettivi bottoni (DIP)
         if (onRestart != null) {
             restartButton.setOnAction(e -> onRestart.run());
         }
@@ -27,6 +32,9 @@ public class VictoryView {
         initUI();
     }
 
+    /**
+     * Inizializza i componenti grafici, carica l'immagine di sfondo e dispone il layout dei bottoni.
+     */
     private void initUI() {
         ImageView backgroundView = new ImageView();
         try {
@@ -40,7 +48,7 @@ public class VictoryView {
 
         } catch (Exception e) {
             System.err.println("Errore nel caricamento dell'immagine di Vittoria: " + e.getMessage());
-            root.setStyle("-fx-background-color: #0A101D;");
+            root.setStyle("-fx-background-color: #0A101D;"); // Fallback di colore in caso di errore risorse
         }
 
         VBox buttonsContainer = new VBox(15);
@@ -76,6 +84,9 @@ public class VictoryView {
         StackPane.setAlignment(backgroundView, Pos.CENTER);
     }
 
+    /**
+     * Metodo di supporto per configurare stili, dimensioni ed effetti di hover dei pulsanti.
+     */
     private void configureButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
         button.setText(text);
         button.setMinWidth(width);

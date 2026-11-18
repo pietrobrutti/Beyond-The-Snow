@@ -9,9 +9,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Gestisce la persistenza locale, il caricamento e il salvataggio dei punteggi,
+ * della classifica delle vittorie (Top 5) e dello storico dei tentativi recenti.
+ */
 public class ScoreManager {
 
-    // Classe per le Partite Vinte (con tempo)
+    /**
+     * Rappresenta una singola voce all'interno della classifica delle partite vinte.
+     */
     public static class VictoryEntry {
         private final String heroName;
         private final long elapsedSeconds;
@@ -29,6 +35,9 @@ public class ScoreManager {
             return elapsedSeconds;
         }
 
+        /**
+         * Restituisce il tempo formattato in formato leggibile (secondi o minuti e secondi).
+         */
         public String getFormattedTime() {
             if (elapsedSeconds < 60) {
                 return elapsedSeconds + " secondi";
@@ -40,11 +49,13 @@ public class ScoreManager {
         }
     }
 
-    // Classe per lo storico di tutte le altre partite / tentativi (con rune raccolte)
+    /**
+     * Rappresenta una voce dello storico dei tentativi di gioco conclusi (es. sconfitte o ritirate).
+     */
     public static class AttemptEntry {
         private final String heroName;
         private final int runesCollected;
-        private final String status; // es. "Sconfitto", "Ritirato", ecc.
+        private final String status; // Es. "Sconfitto"
 
         public AttemptEntry(String heroName, int runesCollected, String status) {
             this.heroName = heroName;
@@ -71,36 +82,49 @@ public class ScoreManager {
     private static final String VICTORY_FILE = "leaderboard_victories.txt";
     private static final String ATTEMPT_FILE = "leaderboard_attempts.txt";
 
+    // Blocco di inizializzazione statica: carica i dati da file all'avvio dell'applicazione
     static {
         loadVictories();
         loadAttempts();
     }
 
-    // Aggiunge una vittoria
+    /**
+     * Aggiunge una nuova vittoria alla classifica, ordinandola per tempo di completamento
+     * e mantenendo solo le migliori 5 posizioni.
+     */
     public static void addVictory(String heroName, long elapsedSeconds) {
         victories.add(new VictoryEntry(heroName, elapsedSeconds));
         victories.sort(Comparator.comparingLong(VictoryEntry::getElapsedSeconds));
 
         if (victories.size() > 5) {
-            victories.remove(victories.size() - 1); // Mantieni i top 5
+            victories.remove(victories.size() - 1); // Mantiene esclusivamente la Top 5
         }
         saveVictories();
     }
 
-    // Aggiunge un tentativo/partita conclusa
+    /**
+     * Registra un nuovo tentativo concluso, inserendolo in cima alla lista (più recente)
+     * e mantenendo un limite massimo storico di 10 elementi.
+     */
     public static void addAttempt(String heroName, int runesCollected, String status) {
-        attempts.add(0, new AttemptEntry(heroName, runesCollected, status)); // Inserisce in cima (più recente)
+        attempts.add(0, new AttemptEntry(heroName, runesCollected, status));
 
         if (attempts.size() > 10) {
-            attempts.remove(attempts.size() - 1); // Mantieni gli ultimi 10 tentativi
+            attempts.remove(attempts.size() - 1); // Mantiene gli ultimi 10 tentativi
         }
         saveAttempts();
     }
 
+    /**
+     * Restituisce una vista non modificabile (read-only) della classifica delle vittorie.
+     */
     public static List<VictoryEntry> getVictories() {
         return Collections.unmodifiableList(victories);
     }
 
+    /**
+     * Restituisce una vista non modificabile (read-only) dello storico dei tentativi.
+     */
     public static List<AttemptEntry> getAttempts() {
         return Collections.unmodifiableList(attempts);
     }
@@ -155,7 +179,7 @@ public class ScoreManager {
             attempts.clear();
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 3) {
+                if(parts.length == 3) {
                     attempts.add(new AttemptEntry(parts[0], Integer.parseInt(parts[1]), parts[2]));
                 }
             }

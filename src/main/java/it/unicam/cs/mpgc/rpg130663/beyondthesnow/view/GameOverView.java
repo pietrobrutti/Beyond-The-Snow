@@ -7,6 +7,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+/**
+ * Gestisce la vista della schermata di Sconfitta (Game Over), configurando l'interfaccia utente,
+ * il caricamento dello sfondo e l'associazione dei comandi di riavvio o ritorno al menu.
+ */
 public class GameOverView {
     private final StackPane root;
     private final Button restartButton;
@@ -17,7 +21,7 @@ public class GameOverView {
         this.restartButton = new Button();
         this.menuButton = new Button();
 
-        // Colleghiamo le azioni ai bottoni
+        // Collega le azioni di navigazione/riavvio ai rispettivi bottoni (DIP)
         if (onRestart != null) {
             restartButton.setOnAction(e -> onRestart.run());
         }
@@ -28,6 +32,9 @@ public class GameOverView {
         initUI();
     }
 
+    /**
+     * Inizializza i componenti grafici, carica l'immagine di sfondo e dispone il layout dei bottoni.
+     */
     private void initUI() {
         ImageView backgroundView = new ImageView();
         try {
@@ -41,7 +48,7 @@ public class GameOverView {
 
         } catch (Exception e) {
             System.err.println("Errore nel caricamento dell'immagine di Game Over: " + e.getMessage());
-            root.setStyle("-fx-background-color: #1A0A0A;");
+            root.setStyle("-fx-background-color: #1A0A0A;"); // Fallback di colore in caso di errore risorse
         }
 
         VBox buttonsContainer = new VBox(15);
@@ -77,6 +84,9 @@ public class GameOverView {
         StackPane.setAlignment(backgroundView, Pos.CENTER);
     }
 
+    /**
+     * Metodo di supporto per configurare stili, dimensioni ed effetti di hover dei pulsanti.
+     */
     private void configureButton(Button button, String text, double width, String baseStyle, String hoverStyle) {
         button.setText(text);
         button.setMinWidth(width);

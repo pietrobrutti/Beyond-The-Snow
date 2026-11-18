@@ -16,6 +16,10 @@ import javafx.util.Duration;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
+/**
+ * Gestisce la vista d'interfaccia grafica per gli scontri contro i nemici (stile JRPG/Pokémon),
+ * estraendo casualmente un avversario e gestendo i menu di battaglia, le animazioni e i turni.
+ */
 public class BattleView {
     private final StackPane overlay;
     private final Random random = new Random();
@@ -27,7 +31,7 @@ public class BattleView {
         this.overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(10, 15, 25, 0.95);");
 
-        // Selezione casuale del nemico
+        // Selezione casuale del nemico in base a soglie di probabilità
         int roll = random.nextInt(100);
         String enemyName;
         Image enemySelectedImage;
@@ -58,7 +62,7 @@ public class BattleView {
                         "-fx-border-color: #1D3450; -fx-border-width: 4px; -fx-border-radius: 8px; -fx-background-radius: 8px;"
         );
 
-        // Area superiore (Nemico)
+        // --- AREA SUPERIORE (STATISTICHE E SPRITE NEMICO) ---
         BorderPane topArea = new BorderPane();
         VBox enemyInfoBox = new VBox(4);
         enemyInfoBox.setPadding(new Insets(12));
@@ -93,7 +97,7 @@ public class BattleView {
         topArea.setRight(enemyImageWrapper);
         battleLayout.setTop(topArea);
 
-        // Immagine Eroe (Centro)
+        // --- SPRITE EROE (CENTRO) ---
         ImageView heroImageView = new ImageView();
         if (heroImage != null) {
             heroImageView.setImage(heroImage);
@@ -107,7 +111,7 @@ public class BattleView {
         heroImageWrapper.setPadding(new Insets(70, 0, 5, 45));
         battleLayout.setCenter(heroImageWrapper);
 
-        // Area inferiore (Azioni e Statistiche Eroe)
+        // --- AREA INFERIORE (STATISTICHE EROE E PANNELLO COMANDI/DIALOGHI) ---
         VBox bottomContainer = new VBox(0);
         VBox heroInfoBox = new VBox(4);
         heroInfoBox.setPadding(new Insets(10, 15, 10, 15));
@@ -160,6 +164,7 @@ public class BattleView {
         final int[] currentHp = { heroCurrentHp };
         final int[] currentCold = { heroCurrentCold };
 
+        // --- GESTIONE DEI PULSANTI E LOGICA DEI TURNI DI BATTAGLIA ---
         btnFight.setOnAction(e -> {
             dialogueLabel.setText("Scegli la mossa:\n1. Fendente (Danno medio)\n2. Ardente (Danno forte)");
 
@@ -195,7 +200,7 @@ public class BattleView {
                 PauseTransition p = new PauseTransition(Duration.seconds(1.8));
                 p.setOnFinished(x -> {
                     if (currentHp[0] <= 0 || currentCold[0] <= 0) {
-                        // Chiusura gestita all'esterno
+                        // Sconfitta gestita dai callback esterni
                     } else {
                         dialogueLabel.setText("Scegli la tua mossa.");
                         actionPanel.setRight(actionButtonsBox);
@@ -255,6 +260,9 @@ public class BattleView {
         StackPane.setAlignment(battleLayout, Pos.CENTER);
     }
 
+    /**
+     * Metodo di utilità per creare pulsanti con lo stile grafico retro/JRPG ispirato ai giochi classici.
+     */
     private Button createPokemonMenuButton(String text) {
         Button btn = new Button(text);
         btn.setPrefSize(140, 32);
