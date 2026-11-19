@@ -76,4 +76,4 @@ Ogni parte del codice suggerita o revisionata è stata analizzata, testata, inte
 ## ⚠️Nota
 Progetto universitario sviluppato per l'esame presso l'Università di Camerino (UNICAM).
 
-📌 Per un'analisi approfondita delle scelte architetturali, dell'applicazione dei principi SOLID e dei dettagli sull'uso dell'AI, consultare la [**Wiki del repository**](https://github.com/pietrobrutti/Beyond-The-Snow/wiki/Pagina-1).
+📌 Per un'analisi approfondita delle scelte architetturali, dell'applicazione dei principi SOLID e dei dettagli sull'uso dell'AI, consultare la [**Wiki del repository**](https://github.com/pietrobrutti/Beyond-The-Snow/wiki).
